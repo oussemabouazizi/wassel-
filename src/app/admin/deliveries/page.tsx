@@ -38,26 +38,15 @@ export default function AdminDeliveries() {
       setLoading(true);
       setError(null);
       const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const { data: persons, error: err } = await supabase
-        .from('delivery_persons')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const res = await fetch('/api/admin/deliveries', {
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch');
 
-      if (err) throw err;
-
-      const userIds = (persons || []).map((p: any) => p.user_id);
-      const { data: profiles } = userIds.length > 0
-        ? await supabase.from('profiles').select('id, full_name, email, phone, avatar_url').in('id', userIds)
-        : { data: [] };
-
-      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-      const merged = (persons || []).map((p: any) => ({
-        ...p,
-        profiles: profileMap.get(p.user_id) || { full_name: 'Unknown', email: '', phone: '', avatar_url: null },
-      }));
-
-      let filtered = merged as unknown as DeliveryWithProfile[];
+      let filtered = (json.data || []) as DeliveryWithProfile[];
       if (search) {
         filtered = filtered.filter(d => d.profiles?.full_name?.toLowerCase().includes(search.toLowerCase()));
       }

@@ -16,16 +16,38 @@ export default function DeliverySettings() {
     full_name: '',
     phone: '',
     email: '',
+    vehicle_type: 'bike',
+    vehicle_plate: '',
   });
 
   useEffect(() => {
     if (!user) return;
-    setForm({
-      full_name: user.full_name || '',
-      phone: user.phone || '',
-      email: user.email || '',
-    });
-    setLoading(false);
+    const supabase = createClient();
+    const load = async () => {
+      setForm({
+        full_name: user.full_name || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        vehicle_type: 'bike',
+        vehicle_plate: '',
+      });
+
+      const { data: dp } = await supabase
+        .from('delivery_persons')
+        .select('vehicle_type, vehicle_plate')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (dp) {
+        setForm(prev => ({
+          ...prev,
+          vehicle_type: dp.vehicle_type || 'bike',
+          vehicle_plate: dp.vehicle_plate || '',
+        }));
+      }
+      setLoading(false);
+    };
+    load();
   }, [user]);
 
   async function handleSave() {
@@ -33,12 +55,19 @@ export default function DeliverySettings() {
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase
+      const { error: profileErr } = await supabase
         .from('profiles')
         .update({ full_name: form.full_name, phone: form.phone })
         .eq('id', user.id);
-      if (error) throw error;
-      toast('success', 'Profile updated');
+      if (profileErr) throw profileErr;
+
+      const { error: dpErr } = await supabase
+        .from('delivery_persons')
+        .update({ vehicle_type: form.vehicle_type, vehicle_plate: form.vehicle_plate })
+        .eq('user_id', user.id);
+      if (dpErr) throw dpErr;
+
+      toast('success', 'Settings updated successfully');
     } catch (err: any) {
       toast('error', err.message);
     } finally {
@@ -52,7 +81,7 @@ export default function DeliverySettings() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Settings</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">Manage your account settings</p>
+        <p className="text-[var(--color-text-secondary)] mt-1">Manage your profile and vehicle</p>
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -62,6 +91,28 @@ export default function DeliverySettings() {
             <Input label="Full Name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
             <Input label="Email" value={form.email} disabled />
             <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          </div>
+        </Card>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <Card>
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Vehicle</h2>
+          <div className="space-y-4">
+            <div className="w-full">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Vehicle Type</label>
+              <select
+                value={form.vehicle_type}
+                onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })}
+                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all duration-200 appearance-none"
+              >
+                <option value="bike">🚲 Bike</option>
+                <option value="motorcycle">🏍️ Motorcycle</option>
+                <option value="car">🚗 Car</option>
+                <option value="scooter">🛵 Scooter</option>
+              </select>
+            </div>
+            <Input label="License Plate" placeholder="e.g. 123 TN 456" value={form.vehicle_plate} onChange={(e) => setForm({ ...form, vehicle_plate: e.target.value })} />
           </div>
         </Card>
       </motion.div>

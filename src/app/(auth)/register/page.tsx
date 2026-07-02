@@ -27,6 +27,7 @@ export default function RegisterPage() {
     phone: '',
     password: '',
     confirmPassword: '',
+    vehicleType: 'bike',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +78,7 @@ export default function RegisterPage() {
         if (selectedRole === 'delivery') {
           await supabase.from('delivery_persons').insert({
             user_id: data.user.id,
-            vehicle_type: 'bike',
+            vehicle_type: formData.vehicleType,
             vehicle_plate: 'PENDING',
             id_document_url: 'pending',
             license_document_url: 'pending',
@@ -184,6 +185,22 @@ export default function RegisterPage() {
                   icon={<User className="w-5 h-5" />}
                   required
                 />
+
+                {selectedRole === 'delivery' && (
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Vehicle Type</label>
+                    <select
+                      value={formData.vehicleType}
+                      onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+                      className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all duration-200 appearance-none"
+                    >
+                      <option value="bike">🚲 Bike</option>
+                      <option value="motorcycle">🏍️ Motorcycle</option>
+                      <option value="car">🚗 Car</option>
+                      <option value="scooter">🛵 Scooter</option>
+                    </select>
+                  </div>
+                )}
 
                 <Input
                   label="Email"

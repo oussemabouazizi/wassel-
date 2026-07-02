@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { latitude, longitude } = await request.json();
+  const body = await request.json().catch(() => ({}));
+  const { latitude, longitude } = body;
   if (!latitude || !longitude) return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
 
   const { error } = await supabase
@@ -36,12 +37,20 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('delivery_persons')
-    .select('id, user_id, latitude, longitude, online_status, total_deliveries, rating, vehicle_type, profiles!delivery_persons_user_id_fkey(full_name, avatar_url)')
-    .eq('online_status', 'online')
-    .not('latitude', 'is', null)
-    .not('longitude', 'is', null);
+    .select('id, user_id, latitude, longitude, online_status, total_deliveries, rating, vehicle_type');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ data });
+  const userIds = (data || []).map((d: any) => d.user_id).filter(Boolean);
+  const { data: profiles } = userIds.length > 0
+    ? await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
+    : { data: [] };
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+  const merged = (data || []).map((d: any) => ({
+    ...d,
+    profiles: profileMap.get(d.user_id) || { full_name: 'Delivery', avatar_url: null },
+  }));
+
+  return NextResponse.json({ data: merged });
 }

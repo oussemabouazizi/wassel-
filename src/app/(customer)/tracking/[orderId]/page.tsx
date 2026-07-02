@@ -34,20 +34,52 @@ export default function TrackingPage() {
     const fetchOrder = async () => {
       const supabase = createClient();
       try {
-        const { data, error: fetchError } = await supabase
+        const { data: orderData, error: fetchError } = await supabase
           .from('orders')
-          .select('*, stores(*), delivery_person:delivery_persons(*, profiles(*))')
+          .select('*')
           .eq('id', params.orderId)
           .single();
 
         if (fetchError) throw fetchError;
 
-        if (data.status === 'delivered' || data.status === 'cancelled') {
+        if (orderData.status === 'delivered' || orderData.status === 'cancelled') {
           router.replace(`/orders/${params.orderId}`);
           return;
         }
 
-        setOrder(data);
+        const { data: storeData } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', orderData.store_id)
+          .single();
+
+        let deliveryPersonData: (DeliveryPerson & { profiles: Profile }) | null = null;
+        if (orderData.delivery_person_id) {
+          const { data: dp } = await supabase
+            .from('delivery_persons')
+            .select('*')
+            .eq('user_id', orderData.delivery_person_id)
+            .maybeSingle();
+
+          if (dp) {
+            const { data: dpProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', dp.user_id)
+              .maybeSingle();
+
+            deliveryPersonData = {
+              ...dp,
+              profiles: dpProfile || ({ full_name: 'Delivery', phone: '', email: '' } as Profile),
+            } as DeliveryPerson & { profiles: Profile };
+          }
+        }
+
+        setOrder({
+          ...orderData,
+          stores: storeData || ({ latitude: 36.8065, longitude: 10.1815, name: 'Store' } as Store),
+          delivery_person: deliveryPersonData,
+        } as OrderWithRelations);
       } catch (err) {
         setError(err instanceof Error ? err.message : t('orders.orderNotFound'));
       } finally {
@@ -144,8 +176,8 @@ export default function TrackingPage() {
         order={order}
         deliveryPerson={order.delivery_person!}
         storeLocation={{
-          lat: order.stores?.latitude ?? 0,
-          lng: order.stores?.longitude ?? 0,
+          lat: order.stores?.latitude ?? 36.8065,
+          lng: order.stores?.longitude ?? 10.1815,
         }}
       />
     </motion.div>
