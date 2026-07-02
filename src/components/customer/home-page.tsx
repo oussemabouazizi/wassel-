@@ -60,12 +60,12 @@ function FadeUp({ children, delay = 0, className = '', y = 30 }: { children: Rea
 }
 
 const processSteps = [
-  { icon: '📍', title: 'Choose location', desc: 'Set your delivery address and see stores near you' },
-  { icon: '🛍️', title: 'Pick your items', desc: 'Browse stores, add items to cart, customize your order' },
-  { icon: '🚀', title: 'Track & receive', desc: 'Follow your delivery live and get it at your door' },
+  { icon: '📍', titleKey: 'home.processStep1Title', descKey: 'home.processStep1Desc' },
+  { icon: '🛍️', titleKey: 'home.processStep2Title', descKey: 'home.processStep2Desc' },
+  { icon: '🚀', titleKey: 'home.processStep3Title', descKey: 'home.processStep3Desc' },
 ];
 
-interface DbCategory { id: string; name: string; name_ar: string; icon: string; image_url: string; }
+  interface DbCategory { id: string; name: string; name_ar: string; name_fr: string; icon: string; image_url: string; }
 interface DbStore { id: string; name: string; rating: number; total_orders: number; image_url: string; cover_url: string; }
 interface DbReview { id: string; rating: number; comment: string; created_at: string; profiles: { full_name: string } | null; }
 
@@ -94,7 +94,7 @@ export default function HomePage() {
     const supabase = createClient();
     const loadData = async () => {
       const [catRes, storeRes, reviewRes, statsRes] = await Promise.all([
-        supabase.from('categories').select('id, name, name_ar, icon, image_url').order('sort_order').limit(10),
+        supabase.from('categories').select('id, name, name_ar, name_fr, icon, image_url').order('sort_order').limit(10),
         supabase.from('stores').select('id, name, rating, total_orders, image_url, cover_url').eq('status', 'approved').order('total_orders', { ascending: false }).limit(6),
         supabase.from('reviews').select('id, rating, comment, created_at, user_id').order('created_at', { ascending: false }).limit(50),
         fetch('/api/stats').then(r => r.json()).catch(() => ({ users: 0, stores: 0, orders: 0, rating: 0 })),
@@ -124,10 +124,33 @@ export default function HomePage() {
     loadData();
   }, []);
 
-  const categories = dbCategories.length > 0 ? dbCategories.map(c => ({
-    name: c.name, iconName: c.icon || '', bg: '#FFF0E6',
-    image_url: c.image_url,
-  })) : [
+  const categoryNameMap: Record<string, { en: string; fr: string; ar: string }> = {
+    'Food': { en: 'Food', fr: 'Nourriture', ar: 'طعام' },
+    'Groceries': { en: 'Groceries', fr: 'Épicerie', ar: 'بقالة' },
+    'Pharmacy': { en: 'Pharmacy', fr: 'Pharmacie', ar: 'صيدلية' },
+    'Flowers': { en: 'Flowers', fr: 'Fleurs', ar: 'زهور' },
+    'Pets': { en: 'Pets', fr: 'Animaux', ar: 'حيوانات أليفة' },
+    'Electronics': { en: 'Electronics', fr: 'Électronique', ar: 'إلكترونيات' },
+    'Fashion': { en: 'Fashion', fr: 'Mode', ar: 'أزياء' },
+    'Sports': { en: 'Sports', fr: 'Sports', ar: 'رياضة' },
+    'Pizza': { en: 'Pizza', fr: 'Pizza', ar: 'بيتزا' },
+    'Burgers': { en: 'Burgers', fr: 'Burgers', ar: 'برغر' },
+    'Sushi': { en: 'Sushi', fr: 'Sushi', ar: 'سوشي' },
+    'Desserts': { en: 'Desserts', fr: 'Desserts', ar: 'حلويات' },
+    'Baby': { en: 'Baby', fr: 'Bébé', ar: 'طفل' },
+    'Stationery': { en: 'Stationery', fr: 'Papeterie', ar: 'مستلزمات مكتبية' },
+  };
+
+  const categories = dbCategories.length > 0 ? dbCategories.map(c => {
+    const translated = categoryNameMap[c.name];
+    const displayName = translated
+      ? (language === 'ar' ? (c.name_ar || translated.ar) : language === 'fr' ? (c.name_fr || translated.fr) : c.name)
+      : (language === 'ar' ? (c.name_ar || c.name) : language === 'fr' ? (c.name_fr || c.name) : c.name);
+    return {
+      name: displayName, iconName: c.icon || '', bg: '#FFF0E6',
+      image_url: c.image_url,
+    };
+  }) : [
     { name: 'Food', iconName: 'utensils', bg: '#FFF0E6' },
     { name: 'Groceries', iconName: 'shopping-cart', bg: '#E8F5E9' },
     { name: 'Pharmacy', iconName: 'pill', bg: '#E3F2FD' },
@@ -150,25 +173,25 @@ export default function HomePage() {
   ];
 
   const testimonials = dbReviews.length > 0 ? dbReviews.map(r => ({
-    text: r.comment || 'Great experience!',
+    text: r.comment || t('home.defaultReview'),
     name: r.profiles?.full_name || 'User',
-    role: 'Verified buyer',
+    role: t('home.verifiedBuyer'),
     rating: r.rating,
     color: ['#FF6B00', '#22C55E', '#6366F1', '#F59E0B', '#EC4899', '#14B8A6'][Math.floor(Math.random() * 6)],
   })) : [];
 
   const statsData = [
-    { value: dbStats.stores, display: `${dbStats.stores}+`, label: 'Stores', icon: Store, isRating: false },
-    { value: dbStats.users, display: `${dbStats.users}`, label: 'Users', icon: Users, isRating: false },
-    { value: dbStats.orders, display: `${dbStats.orders}`, label: 'Orders', icon: TrendingUp, isRating: false },
-    { value: dbStats.rating, display: dbStats.rating > 0 ? dbStats.rating.toFixed(1) : '—', label: 'Rating', icon: Star, isRating: true },
+    { value: dbStats.stores, display: `${dbStats.stores}+`, label: t('home.categories'), icon: Store, isRating: false },
+    { value: dbStats.users, display: `${dbStats.users}`, label: t('home.statsUsersLabel'), icon: Users, isRating: false },
+    { value: dbStats.orders, display: `${dbStats.orders}`, label: t('common.orders'), icon: TrendingUp, isRating: false },
+    { value: dbStats.rating, display: dbStats.rating > 0 ? dbStats.rating.toFixed(1) : '—', label: t('home.reviews'), icon: Star, isRating: true },
   ];
 
   const whyUs = [
-    { icon: Truck, title: 'Lightning delivery', desc: 'Fast delivery riders in your area. We get it there quickly.', color: '#FF6B00', stats: 'Fast delivery' },
-    { icon: Shield, title: '100% secure', desc: 'Cash on delivery with full order protection and easy returns.', color: '#22C55E', stats: 'Secure payments' },
-    { icon: Zap, title: 'Real-time tracking', desc: 'Watch your delivery person approach your door on the live map.', color: '#6366F1', stats: 'Live updates' },
-    { icon: Star, title: 'Top curated stores', desc: 'Every store is vetted for quality. Only the best make it on Wassel.', color: '#F59E0B', stats: 'Top stores' },
+    { icon: Truck, titleKey: 'home.whyUs1Title', descKey: 'home.whyUs1Desc', color: '#FF6B00', statsKey: 'home.whyUs1Stats' },
+    { icon: Shield, titleKey: 'home.whyUs2Title', descKey: 'home.whyUs2Desc', color: '#22C55E', statsKey: 'home.whyUs2Stats' },
+    { icon: Zap, titleKey: 'home.whyUs3Title', descKey: 'home.whyUs3Desc', color: '#6366F1', statsKey: 'home.whyUs3Stats' },
+    { icon: Star, titleKey: 'home.whyUs4Title', descKey: 'home.whyUs4Desc', color: '#F59E0B', statsKey: 'home.whyUs4Stats' },
   ];
 
   const handleSignOut = async () => {
@@ -200,13 +223,13 @@ export default function HomePage() {
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
               <Link href="/stores" className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-secondary)' }}>
-                Explore
+                {t('nav.explore')}
               </Link>
               <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all hover:bg-black/5 cursor-pointer" style={{ color: 'var(--color-text-secondary)' }}>
-                How it works
+                {t('home.howItWorks')}
               </button>
               <Link href="/business" className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-secondary)' }}>
-                For Business
+                {t('home.forBusiness')}
               </Link>
             </nav>
 
@@ -263,7 +286,7 @@ export default function HomePage() {
               <button
                 onClick={toggleTheme}
                 className="p-2.5 rounded-xl transition-colors hover:bg-black/5"
-                title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                title={theme === 'dark' ? t('home.lightMode') : t('home.darkMode')}
               >
                 {theme === 'dark' ? (
                   <Sun className="w-[18px] h-[18px]" style={{ color: 'var(--color-text-secondary)' }} />
@@ -349,7 +372,7 @@ export default function HomePage() {
                                 style={{ color: 'var(--color-text-primary)' }}
                               >
                                 <Settings className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
-                                Settings
+                                {t('nav.settings')}
                               </Link>
                             </div>
                             <div className="p-1.5 border-t border-black/5">
@@ -358,7 +381,7 @@ export default function HomePage() {
                                 className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-colors hover:bg-red-50 text-red-600 cursor-pointer"
                               >
                                 <LogOut className="w-4 h-4" />
-                                Sign Out
+                                {t('nav.signOut')}
                               </button>
                             </div>
                           </motion.div>
@@ -370,12 +393,12 @@ export default function HomePage() {
               ) : (
                 <>
                   <Link href="/login" className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-secondary)' }}>
-                    Login
+                    {t('nav.login')}
                   </Link>
                   <Link href="/register" className="ml-1">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button size="sm" className="rounded-xl shadow-lg shadow-orange-500/25 gap-1.5">
-                        Get Started
+                        {t('nav.getStarted')}
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </motion.div>
@@ -436,7 +459,7 @@ export default function HomePage() {
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-xl transition-colors hover:bg-black/5"
-                title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                title={theme === 'dark' ? t('home.lightMode') : t('home.darkMode')}
               >
                 {theme === 'dark' ? (
                   <Sun className="w-[18px] h-[18px]" style={{ color: 'var(--color-text-secondary)' }} />
@@ -479,13 +502,13 @@ export default function HomePage() {
               >
                 <div className="px-5 py-4 space-y-1">
                   <Link href="/stores" onClick={() => setMenuOpen(false)} className="block py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-primary)' }}>
-                    Explore
+                    {t('nav.explore')}
                   </Link>
                   <button onClick={() => { setMenuOpen(false); document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' }); }} className="block w-full text-left py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-black/5 cursor-pointer" style={{ color: 'var(--color-text-primary)' }}>
-                    How it works
+                    {t('home.howItWorks')}
                   </button>
                   <Link href="/business" onClick={() => setMenuOpen(false)} className="block py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-primary)' }}>
-                    For Business
+                    {t('home.forBusiness')}
                   </Link>
 
                   {user ? (
@@ -510,21 +533,21 @@ export default function HomePage() {
                       )}
                       <Link href="/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-primary)' }}>
                         <Settings className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
-                        Settings
+                        {t('nav.settings')}
                       </Link>
                       <button onClick={() => { setMenuOpen(false); handleSignOut(); }} className="flex items-center gap-3 w-full py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-red-50 text-red-600 cursor-pointer">
                         <LogOut className="w-4 h-4" />
-                        Sign Out
+                        {t('nav.signOut')}
                       </button>
                     </>
                   ) : (
                     <>
                       <Link href="/login" onClick={() => setMenuOpen(false)} className="block py-3 px-4 text-sm font-medium rounded-xl transition-all hover:bg-black/5" style={{ color: 'var(--color-text-primary)' }}>
-                        Login
+                        {t('nav.login')}
                       </Link>
                       <div className="pt-3">
                         <Link href="/register" onClick={() => setMenuOpen(false)}>
-                          <Button fullWidth size="sm" className="rounded-xl">Get Started</Button>
+                          <Button fullWidth size="sm" className="rounded-xl">{t('nav.getStarted')}</Button>
                         </Link>
                       </div>
                     </>
@@ -549,7 +572,7 @@ export default function HomePage() {
             <div className="pt-20 sm:pt-24 text-center">
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF6B00]/10 to-[#FF8C33]/10 border border-[#FF6B00]/15 px-5 py-1.5 rounded-full text-sm font-semibold text-[#FF6B00] shadow-sm">
                 <Sparkles className="w-4 h-4" />
-                Now delivering in Tunis & Ariana
+                {t('home.heroBadge')}
               </motion.div>
             </div>
 
@@ -558,23 +581,23 @@ export default function HomePage() {
                 {/* Left */}
                 <div>
                   <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-[4rem] font-extrabold text-[var(--color-text-primary)] leading-[1.05] tracking-tight">
-                    Everything you<br />
-                    <span className="bg-gradient-to-r from-[#FF6B00] via-[#FF8C33] to-[#FFA726] bg-clip-text text-transparent">need, delivered.</span>
+                    {t('home.heroTitle1')}<br />
+                    <span className="bg-gradient-to-r from-[#FF6B00] via-[#FF8C33] to-[#FFA726] bg-clip-text text-transparent">{t('home.heroTitle2')}</span>
                   </motion.h1>
 
                   <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="text-lg text-[var(--color-text-secondary)] mt-4 mb-8 max-w-md leading-relaxed">
-                    From groceries to gadgets, pharmacy to flowers — choose from {dbStats.stores || 'hundreds of'} stores and get everything delivered to your door fast.
+                    {t('home.heroSubtitle')}
                   </motion.p>
 
                   <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
                     <div className="flex items-center bg-[var(--color-background)] border border-[var(--color-border)] rounded-2xl px-5 py-1.5 shadow-xl shadow-gray-200/60 max-w-lg focus-within:border-[#FF6B00] focus-within:shadow-[#FF6B00]/10 transition-all duration-300">
                       <MapPin className="w-5 h-5 text-[var(--color-text-secondary)] shrink-0" />
-                      <input type="text" placeholder="Enter your delivery address..." className="w-full px-3 py-3.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] bg-transparent focus:outline-none" />
+                      <input type="text" placeholder={t('home.searchPlaceholder')} className="w-full px-3 py-3.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] bg-transparent focus:outline-none" />
                       <Link href="/stores">
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button className="rounded-xl shrink-0 gap-1.5 shadow-lg shadow-orange-500/20">
                             <Search className="w-4 h-4" />
-                            <span className="hidden sm:inline">Find stores</span>
+                            <span className="hidden sm:inline">{t('home.findStores')}</span>
                           </Button>
                         </motion.div>
                       </Link>
@@ -593,15 +616,15 @@ export default function HomePage() {
                         <div className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((i) => (<Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />))}
                         </div>
-                        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5"><span className="font-semibold text-[var(--color-text-primary)]">{dbStats.users}+</span> users</p>
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5"><span className="font-semibold text-[var(--color-text-primary)]">{dbStats.users}+</span> {t('home.statsUsersLabel')}</p>
                       </div>
                     </div>
                     <div className="w-px h-8 bg-[var(--color-border)]" />
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center"><Truck className="w-4 h-4 text-green-500" /></div>
                       <div>
-                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">30 min avg.</p>
-                        <p className="text-xs text-[var(--color-text-secondary)]">Delivery time</p>
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">{t('home.avgDeliveryTime')}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{t('home.deliveryTime')}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -675,11 +698,11 @@ export default function HomePage() {
             <FadeUp>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Categories</span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">What are you looking for?</h2>
+                  <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.categories')}</span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.title')}</h2>
                 </div>
                 <Link href="/stores" className="hidden sm:flex items-center gap-1 text-sm font-semibold text-[#FF6B00] hover:gap-2 transition-all">
-                  Browse all <ArrowRight className="w-4 h-4" />
+                  {t('home.browseAll')} <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </FadeUp>
@@ -703,7 +726,7 @@ export default function HomePage() {
             </div>
 
             <div className="sm:hidden mt-5 text-center">
-              <Link href="/stores" className="text-[#FF6B00] text-sm font-semibold inline-flex items-center gap-1">Browse all categories <ChevronRight className="w-4 h-4" /></Link>
+              <Link href="/stores" className="text-[#FF6B00] text-sm font-semibold inline-flex items-center gap-1">{t('home.browseAllCategories')} <ChevronRight className="w-4 h-4" /></Link>
             </div>
           </div>
         </section>
@@ -713,9 +736,9 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-5">
             <FadeUp>
               <div className="text-center mb-12">
-                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Simple process</span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">Three steps to get started</h2>
-                <p className="text-[var(--color-text-secondary)] text-sm mt-2 max-w-md mx-auto">Ordering has never been easier</p>
+                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.simpleProcess')}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.threeSteps')}</h2>
+                <p className="text-[var(--color-text-secondary)] text-sm mt-2 max-w-md mx-auto">{t('home.orderingEasy')}</p>
               </div>
             </FadeUp>
 
@@ -729,10 +752,10 @@ export default function HomePage() {
                     </div>
                     <div className="inline-flex items-center gap-1 bg-[var(--color-background)] text-[#FF6B00] text-[10px] font-bold px-3 py-1.5 rounded-full border border-[var(--color-border)] mb-3 shadow-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
-                      STEP 0{i + 1}
+                      {t('home.stepLabel', { number: `0${i + 1}` })}
                     </div>
-                    <h3 className="font-bold text-[var(--color-text-primary)] mb-1.5">{s.title}</h3>
-                    <p className="text-sm text-[var(--color-text-secondary)] max-w-[220px] mx-auto leading-relaxed">{s.desc}</p>
+                    <h3 className="font-bold text-[var(--color-text-primary)] mb-1.5">{t(s.titleKey)}</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] max-w-[220px] mx-auto leading-relaxed">{t(s.descKey)}</p>
                   </div>
                 </FadeUp>
               ))}
@@ -746,11 +769,11 @@ export default function HomePage() {
             <FadeUp>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Featured</span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">Top stores near you</h2>
+                  <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.featured')}</span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.topStoresNearYou')}</h2>
                 </div>
                 <Link href="/stores" className="hidden sm:flex items-center gap-1 text-sm font-semibold text-[#FF6B00] hover:gap-2 transition-all">
-                  View all <ArrowRight className="w-4 h-4" />
+                  {t('common.viewAll')} <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </FadeUp>
@@ -784,7 +807,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-3 mt-2 text-sm text-[var(--color-text-secondary)]">
                           <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{store.time} min</span>
                           <span className="w-1 h-1 rounded-full bg-[var(--color-text-secondary)]/50" />
-                          <span>Free delivery</span>
+                          <span>{t('store.freeDelivery')}</span>
                         </div>
                       </div>
                     </div>
@@ -794,7 +817,7 @@ export default function HomePage() {
             </div>
 
             <div className="sm:hidden mt-5 text-center">
-              <Link href="/stores" className="text-[#FF6B00] text-sm font-semibold inline-flex items-center gap-1">View all stores <ChevronRight className="w-4 h-4" /></Link>
+              <Link href="/stores" className="text-[#FF6B00] text-sm font-semibold inline-flex items-center gap-1">{t('home.viewAllStores')} <ChevronRight className="w-4 h-4" /></Link>
             </div>
           </div>
         </section>
@@ -804,9 +827,9 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-5">
             <FadeUp>
               <div className="text-center mb-12">
-                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Why Wassel</span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">Built different</h2>
-                <p className="text-[var(--color-text-secondary)] text-sm mt-2 max-w-md mx-auto">We focus on what matters most</p>
+                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.whyWassel')}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.builtDifferent')}</h2>
+                <p className="text-[var(--color-text-secondary)] text-sm mt-2 max-w-md mx-auto">{t('home.weFocusOn')}</p>
               </div>
             </FadeUp>
 
@@ -819,9 +842,9 @@ export default function HomePage() {
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300" style={{ backgroundColor: f.color + '12', color: f.color }}>
                         <Icon className="w-6 h-6" />
                       </div>
-                      <h3 className="font-bold text-[var(--color-text-primary)] mb-1.5">{f.title}</h3>
-                      <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-3">{f.desc}</p>
-                      <div className="text-xs font-semibold" style={{ color: f.color }}>{f.stats}</div>
+                      <h3 className="font-bold text-[var(--color-text-primary)] mb-1.5">{t(f.titleKey)}</h3>
+                      <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-3">{t(f.descKey)}</p>
+                      <div className="text-xs font-semibold" style={{ color: f.color }}>{t(f.statsKey)}</div>
                     </div>
                   </FadeUp>
                 );
@@ -835,9 +858,9 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-5">
             <FadeUp>
               <div className="text-center mb-12">
-                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Reviews</span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">What users say</h2>
-                <p className="text-[var(--color-text-secondary)] text-sm mt-2">Real reviews from real users</p>
+                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.reviews')}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.whatUsersSay')}</h2>
+                <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('home.realReviews')}</p>
               </div>
             </FadeUp>
 
@@ -845,7 +868,7 @@ export default function HomePage() {
               <FadeUp>
                 <div className="text-center py-12">
                   <Star className="w-12 h-12 text-[var(--color-text-secondary)] mx-auto mb-3 opacity-50" />
-                  <p className="text-[var(--color-text-secondary)]">No reviews yet. Be the first to review!</p>
+                  <p className="text-[var(--color-text-secondary)]">{t('home.noReviews')}</p>
                 </div>
               </FadeUp>
             ) : (
@@ -890,23 +913,23 @@ export default function HomePage() {
 
                 <div className="relative p-8 sm:p-14 sm:py-16 text-center">
                   <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
-                    Ready to order?
+                    {t('home.readyToOrder')}
                   </motion.h2>
                   <motion.p initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-white/80 text-lg mb-8 max-w-lg mx-auto">
-                    Join {dbStats.users || 'thousands of'} users and get everything you need delivered to your door.
+                    {t('home.ctaSubtitle')}
                   </motion.p>
                   <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Link href="/register">
                       <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                         <Button size="lg" className="bg-white text-[#FF6B00] hover:bg-gray-100 rounded-xl font-bold shadow-xl gap-2 px-8 w-full sm:w-auto">
-                          Get started free
+                          {t('home.getStartedFree')}
                           <ArrowRight className="w-5 h-5" />
                         </Button>
                       </motion.div>
                     </Link>
                     <Link href="/stores">
                       <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10 rounded-xl px-8 w-full sm:w-auto">
-                        Browse stores
+                        {t('common.browseStores')}
                       </Button>
                     </Link>
                   </motion.div>
@@ -921,24 +944,24 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-5">
             <FadeUp>
               <div className="text-center mb-10">
-                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">Community</span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">Let&apos;s grow together</h2>
+                <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-[0.2em]">{t('home.community')}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-1.5">{t('home.growTogether')}</h2>
               </div>
             </FadeUp>
 
             <div className="grid sm:grid-cols-3 gap-5">
               {[
-                { emoji: '🛵', title: 'Become a rider', desc: 'Flexible hours, competitive earnings, and the freedom to choose when you work.', bg: 'from-orange-50 to-amber-50', iconBg: 'bg-[#FF6B00]' },
-                { emoji: '🏪', title: 'Partner with us', desc: 'Grow your business with access to thousands of new customers every single day.', bg: 'from-green-50 to-emerald-50', iconBg: 'bg-green-500' },
-                { emoji: '💼', title: 'Join our team', desc: 'We&apos;re looking for ambitious people who love building great products.', bg: 'from-blue-50 to-indigo-50', iconBg: 'bg-blue-500' },
+                { emoji: '🛵', titleKey: 'home.becomeRider', descKey: 'home.becomeRiderDesc', bg: 'from-orange-50 to-amber-50', iconBg: 'bg-[#FF6B00]' },
+                { emoji: '🏪', titleKey: 'home.partnerWithUs', descKey: 'home.partnerDesc', bg: 'from-green-50 to-emerald-50', iconBg: 'bg-green-500' },
+                { emoji: '💼', titleKey: 'home.joinOurTeam', descKey: 'home.joinTeamDesc', bg: 'from-blue-50 to-indigo-50', iconBg: 'bg-blue-500' },
               ].map((item, i) => (
                 <FadeUp key={i} delay={i * 0.08}>
                   <div className={`bg-gradient-to-br ${item.bg} rounded-2xl p-6 sm:p-8 text-center border border-[var(--color-border)]/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300`}>
                     <div className={`w-14 h-14 ${item.iconBg} bg-opacity-10 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 text-3xl`}>{item.emoji}</div>
-                    <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{item.title}</h3>
-                    <p className="text-sm text-[var(--color-text-secondary)] mb-5 leading-relaxed max-w-[260px] mx-auto">{item.desc}</p>
+                    <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{t(item.titleKey)}</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-5 leading-relaxed max-w-[260px] mx-auto">{t(item.descKey)}</p>
                     <Link href="/register" className="text-[#FF6B00] text-sm font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all group">
-                      Learn more
+                      {t('home.learnMore')}
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </div>
@@ -960,19 +983,19 @@ export default function HomePage() {
                   <span className="text-xl font-bold">Wassel</span>
                 </Link>
                 <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Deliver everything to your door. Fast, reliable, and always available when you need it.
+                  {t('home.footerTagline')}
                 </p>
               </div>
               {[
-                { title: 'Company', links: ['About us', 'Careers', 'Blog', 'Press kit'] },
-                { title: 'Support', links: ['Help center', 'Contact us', 'FAQ', 'Safety'] },
-                { title: 'Legal', links: ['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'GDPR'] },
+                { titleKey: 'home.footerCompany', linkKeys: ['home.footerAbout', 'home.footerCareers', 'home.footerBlog', 'home.footerPressKit'] },
+                { titleKey: 'home.footerSupport', linkKeys: ['home.footerHelpCenter', 'home.footerContactUs', 'home.footerFAQ', 'home.footerSafety'] },
+                { titleKey: 'home.footerLegal', linkKeys: ['home.footerTerms', 'home.footerPrivacy', 'home.footerCookie', 'home.footerGDPR'] },
               ].map((col) => (
-                <div key={col.title}>
-                  <h4 className="font-semibold text-white mb-4 text-sm">{col.title}</h4>
+                <div key={col.titleKey}>
+                  <h4 className="font-semibold text-white mb-4 text-sm">{t(col.titleKey)}</h4>
                   <ul className="space-y-2.5 text-gray-400 text-sm">
-                    {col.links.map((link) => (
-                      <li key={link}><Link href="#" className="hover:text-white transition-colors duration-200">{link}</Link></li>
+                    {col.linkKeys.map((linkKey) => (
+                      <li key={linkKey}><Link href="#" className="hover:text-white transition-colors duration-200">{t(linkKey)}</Link></li>
                     ))}
                   </ul>
                 </div>
@@ -980,7 +1003,7 @@ export default function HomePage() {
             </div>
 
             <div className="border-t border-gray-800 mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-gray-500 text-sm">&copy; 2026 Wassel. All rights reserved.</p>
+              <p className="text-gray-500 text-sm">&copy; 2026 Wassel. {t('home.allRightsReserved')}</p>
               <div className="flex items-center gap-3">
                 {['𝕏', 'IG', 'FB', 'LI'].map((s, i) => (
                   <Link key={i} href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#FF6B00] rounded-xl flex items-center justify-center text-gray-400 hover:text-white text-xs font-bold transition-all duration-200">

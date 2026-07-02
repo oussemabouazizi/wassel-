@@ -39,10 +39,10 @@ export default function CartPage() {
         <EmptyState
           icon={<ShoppingCart className="w-8 h-8 text-[var(--color-text-secondary)]" />}
           title={t('cart.empty')}
-          description="Browse stores and add items to get started"
+          description={t('cart.emptyDescription')}
           action={
             <Link href="/stores">
-              <Button>Browse stores</Button>
+              <Button>{t('common.browseStores')}</Button>
             </Link>
           }
         />
@@ -59,19 +59,19 @@ export default function CartPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('cart.title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)]">{getCartCount()} items</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{getCartCount()} {t('cart.items')}</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => {
             clearCart();
-            toast('info', 'Cart cleared');
+            toast('info', t('cart.cleared'));
           }}
           className="text-red-500"
         >
           <Trash2 className="w-4 h-4" />
-          Clear
+          {t('cart.clear')}
         </Button>
       </div>
 
@@ -79,7 +79,7 @@ export default function CartPage() {
         <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--color-surface)] rounded-xl">
           <Store className="w-4 h-4 text-[var(--color-primary)]" />
           <span className="text-sm font-medium text-[var(--color-text-primary)]">
-            {cart[0].product.store_id === selectedStoreId ? 'From selected store' : 'Mixed stores'}
+            {cart[0].product.store_id === selectedStoreId ? t('cart.fromSelectedStore') : t('cart.mixedStores')}
           </span>
         </div>
       )}
@@ -113,13 +113,13 @@ export default function CartPage() {
                       {item.product.name}
                     </h3>
                     <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                      {formatPrice(item.product.price)} each
+                      {formatPrice(item.product.price)} {t('cart.each')}
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       removeFromCart(item.product.id);
-                      toast('info', `${item.product.name} removed`);
+                      toast('info', `${item.product.name} ${t('cart.removed')}`);
                     }}
                     className="p-1.5 rounded-lg hover:bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-red-500 transition-colors shrink-0"
                     aria-label={`${t('common.delete')} ${item.product.name}`}
@@ -132,7 +132,7 @@ export default function CartPage() {
                     <button
                       onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
                       className="w-7 h-7 rounded-lg bg-[var(--color-surface)] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-border)] transition-colors"
-                      aria-label="Decrease quantity"
+                      aria-label={t('cart.decreaseQuantity')}
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
@@ -142,7 +142,7 @@ export default function CartPage() {
                     <button
                       onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
                       className="w-7 h-7 rounded-lg bg-[var(--color-surface)] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-border)] transition-colors"
-                      aria-label="Increase quantity"
+                      aria-label={t('cart.increaseQuantity')}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -159,7 +159,7 @@ export default function CartPage() {
 
       <div className="space-y-3">
         <Card className="space-y-3">
-          <h3 className="font-semibold text-[var(--color-text-primary)]">Order summary</h3>
+          <h3 className="font-semibold text-[var(--color-text-primary)]">{t('cart.orderSummary')}</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[var(--color-text-secondary)]">{t('cart.subtotal')}</span>
@@ -169,7 +169,7 @@ export default function CartPage() {
               <span className="text-[var(--color-text-secondary)]">{t('cart.deliveryFee')}</span>
               <span className="font-medium text-[var(--color-text-primary)]">
                 {deliveryFee === 0 ? (
-                  <span className="text-green-500">Free</span>
+                  <span className="text-green-500">{t('common.free')}</span>
                 ) : (
                   formatPrice(deliveryFee)
                 )}
@@ -178,7 +178,7 @@ export default function CartPage() {
             {getCartTotal() > 0 && getCartTotal() < 50 && (
               <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                Add {formatPrice(50 - getCartTotal())} more for free delivery
+                {t('cart.addMoreForFreeDelivery', { amount: formatPrice(50 - getCartTotal()) })}
               </p>
             )}
             <div className="border-t border-[var(--color-border)] pt-2">

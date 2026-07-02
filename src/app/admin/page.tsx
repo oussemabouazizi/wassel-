@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatPrice, formatDate, cn } from '@/lib/utils';
 import { Card, Badge, Skeleton } from '@/components/ui';
 import type { OrderStatus } from '@/types';
+import { useI18n } from '@/i18n';
 
 interface DashboardStats {
   totalUsers: number;
@@ -43,6 +44,7 @@ const statusBadge = {
 } as const;
 
 export default function AdminDashboard() {
+  const { t } = useI18n();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,17 +83,17 @@ export default function AdminDashboard() {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats?.totalUsers ?? 0, icon: UsersRound, color: 'bg-blue-500' },
-    { label: 'Total Stores', value: stats?.totalStores ?? 0, icon: Store, color: 'bg-purple-500' },
-    { label: 'Total Orders', value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: 'bg-[var(--color-primary)]' },
-    { label: 'Total Revenue', value: stats ? formatPrice(stats.totalRevenue) : '---', icon: DollarSign, color: 'bg-green-500' },
+    { label: t('admin.totalUsers'), value: stats?.totalUsers ?? 0, icon: UsersRound, color: 'bg-blue-500' },
+    { label: t('admin.stores'), value: stats?.totalStores ?? 0, icon: Store, color: 'bg-purple-500' },
+    { label: t('admin.totalOrders'), value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: 'bg-[var(--color-primary)]' },
+    { label: t('admin.totalRevenue'), value: stats ? formatPrice(stats.totalRevenue) : '---', icon: DollarSign, color: 'bg-green-500' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Admin Dashboard</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">Overview of your platform</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('admin.title')}</h1>
+        <p className="text-[var(--color-text-secondary)] mt-1">{t('admin.overviewSubtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -123,12 +125,12 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2">
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Recent Orders</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('admin.recentOrders')}</h2>
               <Link
                 href="/admin/orders"
                 className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1"
               >
-                View all <ChevronRight className="w-4 h-4" />
+                {t('common.viewAll')} <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
             {loading ? (
@@ -138,18 +140,18 @@ export default function AdminDashboard() {
                 ))}
               </div>
             ) : stats!.recentOrders.length === 0 ? (
-              <p className="text-[var(--color-text-secondary)] text-center py-8">No orders yet</p>
+              <p className="text-[var(--color-text-secondary)] text-center py-8">{t('admin.noOrders')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border)]">
-                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">Order</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">Customer</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">Store</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">Status</th>
-                      <th className="text-right py-3 px-2 text-[var(--color-text-secondary)] font-medium">Total</th>
-                      <th className="text-right py-3 px-2 text-[var(--color-text-secondary)] font-medium">Date</th>
+                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableOrder')}</th>
+                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableCustomer')}</th>
+                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableStore')}</th>
+                      <th className="text-left py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableStatus')}</th>
+                      <th className="text-right py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableTotal')}</th>
+                      <th className="text-right py-3 px-2 text-[var(--color-text-secondary)] font-medium">{t('admin.tableDate')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -181,8 +183,8 @@ export default function AdminDashboard() {
                     <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)]">Pending Approval</p>
-                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{stats.pendingStores} store{stats.pendingStores > 1 ? 's' : ''}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('admin.pendingApproval')}</p>
+                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{stats.pendingStores} {stats.pendingStores === 1 ? t('admin.store') : t('admin.storesPlural')}</p>
                   </div>
                 </div>
               </Card>
@@ -190,7 +192,7 @@ export default function AdminDashboard() {
           )}
 
           <Card>
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Users by Role</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('admin.usersByRole')}</h2>
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -211,12 +213,12 @@ export default function AdminDashboard() {
 
           <Card>
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-              Orders <TrendingUp className="w-4 h-4 inline text-[var(--color-primary)]" />
+              {t('admin.orders')} <TrendingUp className="w-4 h-4 inline text-[var(--color-primary)]" />
             </h2>
             {loading ? (
               <Skeleton className="h-24 w-full" />
             ) : stats!.ordersPerDay.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)]">No data yet</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('admin.noData')}</p>
             ) : (
               <div className="flex items-end gap-1 h-24">
                 {stats!.ordersPerDay.slice(-7).map((day, i) => {

@@ -9,15 +9,17 @@ import { createClient } from '@/lib/supabase/client';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import type { UserRole } from '@/types';
+import { useI18n } from '@/i18n';
 
-const roles: { value: UserRole; label: string; icon: React.ReactNode; description: string }[] = [
-  { value: 'customer', label: 'Customer', icon: <ShoppingBag className="w-6 h-6" />, description: 'Order food & items' },
-  { value: 'vendor', label: 'Vendor', icon: <Store className="w-6 h-6" />, description: 'Sell your products' },
-  { value: 'delivery', label: 'Delivery', icon: <Truck className="w-6 h-6" />, description: 'Deliver orders' },
+const roles: { value: UserRole; labelKey: string; icon: React.ReactNode; descriptionKey: string }[] = [
+  { value: 'customer', labelKey: 'auth.customer', icon: <ShoppingBag className="w-6 h-6" />, descriptionKey: 'auth.customerDesc' },
+  { value: 'vendor', labelKey: 'auth.vendor', icon: <Store className="w-6 h-6" />, descriptionKey: 'auth.vendorDesc' },
+  { value: 'delivery', labelKey: 'auth.deliveryPerson', icon: <Truck className="w-6 h-6" />, descriptionKey: 'auth.deliveryDesc' },
 ];
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer');
@@ -41,12 +43,12 @@ export default function RegisterPage() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      toast('error', 'Passwords do not match');
+      toast('error', t('auth.passwordMismatch'));
       return;
     }
 
     if (formData.password.length < 6) {
-      toast('error', 'Password must be at least 6 characters');
+      toast('error', t('auth.passwordMinLength'));
       return;
     }
 
@@ -69,7 +71,7 @@ export default function RegisterPage() {
 
       if (error) {
         if (error.message?.includes('already') || error.status === 422) {
-          throw new Error('This email is already registered. Try logging in.');
+          throw new Error(t('auth.emailAlreadyRegistered'));
         }
         throw error;
       }
@@ -105,11 +107,11 @@ export default function RegisterPage() {
             });
           }
         }
-        toast('success', 'Account created! Welcome to Wassel.');
+        toast('success', t('auth.registerSuccess'));
         router.push('/');
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
+      const message = error instanceof Error ? error.message : t('auth.registerFailed');
       toast('error', message);
     } finally {
       setIsLoading(false);
@@ -135,10 +137,17 @@ export default function RegisterPage() {
 
         {/* Card */}
         <div className="bg-[var(--color-background)] rounded-2xl shadow-xl p-8 border border-[var(--color-border)]">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] mb-6 transition-colors"
+          >
+            ← {t('nav.goBack')}
+          </button>
+
           {step === 1 ? (
             <>
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">Create Account</h1>
-              <p className="text-[var(--color-text-secondary)] mb-6">I am a...</p>
+              <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">{t('auth.createAccount')}</h1>
+              <p className="text-[var(--color-text-secondary)] mb-6">{t('auth.selectRole')}</p>
 
               <div className="space-y-3">
                 {roles.map((role) => (
@@ -153,8 +162,8 @@ export default function RegisterPage() {
                       {role.icon}
                     </div>
                     <div className="text-left">
-                      <h3 className="font-semibold text-[var(--color-text-primary)]">{role.label}</h3>
-                      <p className="text-sm text-[var(--color-text-secondary)]">{role.description}</p>
+                      <h3 className="font-semibold text-[var(--color-text-primary)]">{t(role.labelKey)}</h3>
+                      <p className="text-sm text-[var(--color-text-secondary)]">{t(role.descriptionKey)}</p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-[var(--color-text-secondary)] ml-auto" />
                   </motion.button>
@@ -165,21 +174,21 @@ export default function RegisterPage() {
             <>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Sign Up</h1>
-                  <p className="text-[var(--color-text-secondary)] capitalize">{selectedRole} account</p>
+                  <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('auth.signUp')}</h1>
+                  <p className="text-[var(--color-text-secondary)] capitalize">{selectedRole} {t('auth.accountSuffix')}</p>
                 </div>
                 <button
                   onClick={() => setStep(1)}
                   className="text-sm text-[var(--color-primary)] hover:underline font-medium"
                 >
-                  Change
+                  {t('auth.changeRole')}
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                  label="Full Name"
-                  placeholder="John Doe"
+                  label={t('auth.fullName')}
+                  placeholder={t('auth.fullNamePlaceholder')}
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   icon={<User className="w-5 h-5" />}
@@ -188,24 +197,24 @@ export default function RegisterPage() {
 
                 {selectedRole === 'delivery' && (
                   <div className="w-full">
-                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Vehicle Type</label>
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">{t('delivery.vehicleType')}</label>
                     <select
                       value={formData.vehicleType}
                       onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
                       className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all duration-200 appearance-none"
                     >
-                      <option value="bike">🚲 Bike</option>
-                      <option value="motorcycle">🏍️ Motorcycle</option>
-                      <option value="car">🚗 Car</option>
-                      <option value="scooter">🛵 Scooter</option>
+                      <option value="bike">🚲 {t('delivery.bike')}</option>
+                      <option value="motorcycle">🏍️ {t('delivery.motorcycle')}</option>
+                      <option value="car">🚗 {t('delivery.car')}</option>
+                      <option value="scooter">🛵 {t('delivery.scooter')}</option>
                     </select>
                   </div>
                 )}
 
                 <Input
-                  label="Email"
+                  label={t('auth.email')}
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   icon={<Mail className="w-5 h-5" />}
@@ -213,9 +222,9 @@ export default function RegisterPage() {
                 />
 
                 <Input
-                  label="Phone"
+                  label={t('auth.phone')}
                   type="tel"
-                  placeholder="+216 XX XXX XXX"
+                  placeholder={t('auth.phonePlaceholder')}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   icon={<Phone className="w-5 h-5" />}
@@ -223,9 +232,9 @@ export default function RegisterPage() {
                 />
 
                 <Input
-                  label="Password"
+                  label={t('auth.password')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min 6 characters"
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   icon={<Lock className="w-5 h-5" />}
@@ -242,9 +251,9 @@ export default function RegisterPage() {
                 />
 
                 <Input
-                  label="Confirm Password"
+                  label={t('auth.confirmPassword')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Repeat password"
+                  placeholder={t('auth.confirmPasswordPlaceholder')}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   icon={<Lock className="w-5 h-5" />}
@@ -252,7 +261,7 @@ export default function RegisterPage() {
                 />
 
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
-                  Create Account
+                  {t('auth.createAccount')}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </form>
@@ -262,9 +271,9 @@ export default function RegisterPage() {
 
         {/* Login Link */}
         <p className="text-center mt-6 text-[var(--color-text-secondary)]">
-          Already have an account?{' '}
+          {t('auth.hasAccount')}{' '}
           <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">
-            Sign in
+            {t('auth.signIn')}
           </Link>
         </p>
       </motion.div>

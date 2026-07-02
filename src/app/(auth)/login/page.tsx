@@ -8,10 +8,12 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui';
+import { useI18n } from '@/i18n';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,10 +31,10 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
-      if (!data.user) throw new Error('User not found');
+      if (!data.user) throw new Error(t('auth.userNotFound'));
 
       const role = (data.user.user_metadata?.role as string) || 'customer';
-      toast('success', 'Logged in successfully!');
+      toast('success', t('auth.loginSuccess'));
 
       switch (role) {
         case 'admin':
@@ -48,7 +50,7 @@ export default function LoginPage() {
           router.push('/stores');
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Login failed';
+      const message = error instanceof Error ? error.message : t('auth.loginFailed');
       toast('error', message);
     } finally {
       setIsLoading(false);
@@ -72,14 +74,17 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-[var(--color-background)] rounded-2xl shadow-xl p-8 border border-[var(--color-border)]">
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">Welcome back</h1>
-          <p className="text-[var(--color-text-secondary)] mb-6">Sign in to your account</p>
+          <button onClick={() => router.back()} className="mb-4 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center gap-1 text-sm">
+            ← {t('nav.goBack')}
+          </button>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">{t('auth.welcomeBack')}</h1>
+          <p className="text-[var(--color-text-secondary)] mb-6">{t('auth.signInSubtitle')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Email"
+              label={t('auth.email')}
               type="email"
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               icon={<Mail className="w-5 h-5" />}
@@ -87,9 +92,9 @@ export default function LoginPage() {
             />
 
             <Input
-              label="Password"
+              label={t('auth.password')}
               type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your password"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               icon={<Lock className="w-5 h-5" />}
@@ -110,21 +115,21 @@ export default function LoginPage() {
                 href="/forgot-password"
                 className="text-sm text-[var(--color-primary)] hover:underline font-medium"
               >
-                Forgot password?
+                {t('auth.forgotPassword')}
               </Link>
             </div>
 
             <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
-              Sign In
+              {t('auth.signIn')}
               <ArrowRight className="w-5 h-5" />
             </Button>
           </form>
         </div>
 
         <p className="text-center mt-6 text-[var(--color-text-secondary)]">
-          Don&apos;t have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link href="/register" className="text-[var(--color-primary)] font-semibold hover:underline">
-            Sign up
+            {t('auth.signUp')}
           </Link>
         </p>
       </motion.div>

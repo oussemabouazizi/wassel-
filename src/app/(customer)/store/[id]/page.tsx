@@ -39,7 +39,7 @@ export default function StoreDetailPage() {
         const [storeRes, productsRes] = await Promise.all([
           supabase
             .from('stores')
-            .select('*, categories(*)')
+            .select('*')
             .eq('id', params.id)
             .single(),
           supabase
@@ -52,7 +52,16 @@ export default function StoreDetailPage() {
         if (storeRes.error) throw storeRes.error;
         if (productsRes.error) throw productsRes.error;
 
-        setStore(storeRes.data);
+        let storeData = storeRes.data as StoreWithCategory;
+        if (storeData.category_id) {
+          const { data: catData } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('id', storeData.category_id)
+            .single();
+          if (catData) storeData = { ...storeData, categories: catData };
+        }
+        setStore(storeData);
         setProducts(productsRes.data || []);
 
         if (user) {
@@ -61,10 +70,10 @@ export default function StoreDetailPage() {
             .select('id')
             .eq('user_id', user.id)
             .eq('store_id', params.id as string)
-            .single();
-          if (fav) {
+            .limit(1);
+          if (fav && fav.length > 0) {
             setIsFavorite(true);
-            setFavoriteId(fav.id);
+            setFavoriteId(fav[0].id);
           }
         }
       } catch (err) {
@@ -154,9 +163,9 @@ export default function StoreDetailPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="pb-8"
+      className="max-w-5xl mx-auto pb-8"
     >
-      <div className="relative h-48 md:h-64 bg-[var(--color-surface)]">
+      <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 bg-[var(--color-surface)] overflow-hidden rounded-b-2xl">
         {store.cover_url ? (
           <img
             src={store.cover_url}
@@ -174,81 +183,84 @@ export default function StoreDetailPage() {
             <StoreIcon className="w-16 h-16 text-[var(--color-text-secondary)]" />
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <button
           onClick={() => router.back()}
-          className="absolute top-4 left-4 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+          className="absolute top-4 left-4 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
           aria-label={t('common.back')}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button
           onClick={toggleFavorite}
-          className="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+          className="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
           aria-label={isFavorite ? t('favorites.removedFavorites') : t('favorites.addedToFavorites')}
         >
           <Heart className={cn('w-5 h-5', isFavorite && 'fill-red-500 text-red-500')} />
         </button>
         {!store.is_open && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
             <Badge variant="danger" size="md">{t('store.currentlyClosed')}</Badge>
           </div>
         )}
       </div>
 
-      <div className="px-4 -mt-10 relative z-10">
-        <div className="flex items-end gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl border-4 border-[var(--color-background)] bg-[var(--color-surface)] overflow-hidden shadow-lg shrink-0">
-            {store.image_url ? (
-              <img
-                src={store.image_url}
-                alt={store.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <StoreIcon className="w-8 h-8 text-[var(--color-text-secondary)]" />
-              </div>
-            )}
+      <div className="px-4 sm:px-6 -mt-12 relative z-10">
+        <div className="bg-[var(--color-background)] rounded-2xl shadow-lg border border-[var(--color-border)] p-4 sm:p-6">
+          <div className="flex items-end gap-4 mb-4">
+            <div className="w-20 h-20 rounded-2xl border-4 border-[var(--color-background)] bg-[var(--color-surface)] overflow-hidden shadow-lg shrink-0">
+              {store.image_url ? (
+                <img
+                  src={store.image_url}
+                  alt={store.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <StoreIcon className="w-8 h-8 text-[var(--color-text-secondary)]" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-[var(--color-text-primary)] truncate">
+                {store.name}
+              </h1>
+              {store.categories && (
+                <p className="text-sm text-[var(--color-text-secondary)]">{store.categories.name}</p>
+              )}
+            </div>
           </div>
-          <div className="flex-1 min-w-0 pt-10">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)] truncate">
-              {store.name}
-            </h1>
-            {store.categories && (
-              <p className="text-sm text-[var(--color-text-secondary)]">{store.categories.name}</p>
-            )}
-          </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="font-semibold text-[var(--color-text-primary)]">{store.rating.toFixed(1)}</span>
-            <span className="text-[var(--color-text-secondary)]">({store.total_reviews})</span>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
+              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              <span className="font-semibold text-[var(--color-text-primary)]">{store.rating.toFixed(1)}</span>
+              <span className="text-[var(--color-text-secondary)]">({store.total_reviews})</span>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
+              <Clock className="w-4 h-4 text-[var(--color-primary)]" />
+              <span className="text-[var(--color-text-primary)]">{store.estimated_delivery_time} {t('common.min')}</span>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
+              <Truck className="w-4 h-4 text-[var(--color-primary)]" />
+              <span className="text-[var(--color-text-primary)]">
+                {store.delivery_fee === 0 ? t('store.freeDelivery') : formatPrice(store.delivery_fee)}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
-            <Clock className="w-4 h-4 text-[var(--color-primary)]" />
-            <span className="text-[var(--color-text-primary)]">{store.estimated_delivery_time} {t('common.min')}</span>
-          </div>
-          <div className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-surface)] rounded-xl text-sm">
-            <Truck className="w-4 h-4 text-[var(--color-primary)]" />
-            <span className="text-[var(--color-text-primary)]">
-              {store.delivery_fee === 0 ? t('store.freeDelivery') : formatPrice(store.delivery_fee)}
-            </span>
-          </div>
-        </div>
 
-        <div className="flex gap-4 mb-4 text-sm text-[var(--color-text-secondary)]">
-          <span>{t('store.minOrder')}: {formatPrice(store.min_order)}</span>
-          <span>{store.total_orders} {t('common.orders')}</span>
-        </div>
+          <div className="flex gap-4 mb-4 text-sm text-[var(--color-text-secondary)]">
+            <span>{t('store.minOrder')}: {formatPrice(store.min_order)}</span>
+            <span>{store.total_orders} {t('common.orders')}</span>
+          </div>
 
-        {store.description && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-6">{store.description}</p>
-        )}
+          {store.description && (
+            <p className="text-sm text-[var(--color-text-secondary)]">{store.description}</p>
+          )}
+        </div>
       </div>
 
-      <div className="px-4">
+      <div className="px-4 sm:px-6">
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           {t('store.menuCount', { count: products.length })}
         </h2>
@@ -260,7 +272,7 @@ export default function StoreDetailPage() {
             description={t('store.noProductsDesc')}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product, index) => (
               <motion.div
                 key={product.id}

@@ -7,6 +7,7 @@ import {
   MessageCircle, ChevronRight, Store, Package, Send, ArrowLeft, User
 } from 'lucide-react';
 import { Button, Card, Input, Badge, Skeleton, EmptyState } from '@/components/ui';
+import { useToast } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeTime } from '@/lib/utils';
 import { useAppStore } from '@/store';
@@ -19,6 +20,7 @@ export default function CustomerChatPage() {
   const router = useRouter();
   const supabase = createClient();
   const user = useAppStore((s) => s.user);
+  const { toast } = useToast();
   const [orders, setOrders] = useState<OrderForChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -27,7 +29,6 @@ export default function CustomerChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -51,7 +52,7 @@ export default function CustomerChatPage() {
       .from('chats')
       .select('id, delivery_person_id')
       .eq('order_id', orderId)
-      .single();
+      .maybeSingle();
     return data;
   }
 
@@ -71,7 +72,6 @@ export default function CustomerChatPage() {
     if (chat) {
       setChatId(chat.id);
       await fetchMessages(chat.id);
-      await supabase.from('chats').update({}).eq('id', chat.id);
     } else {
       setChatId(null);
     }
@@ -81,27 +81,61 @@ export default function CustomerChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Realtime subscription
   useEffect(() => {
     if (!chatId) return;
     const channel = supabase
-      .channel(`chat-${chatId}`)
+      .channel(`customer-chat-${chatId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, (payload) => {
         const msg = payload.new as Message;
-        if (msg.sender_id !== user?.id) setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [chatId, supabase, user?.id]);
+  }, [chatId, supabase]);
+
+  // Polling fallback — re-fetch messages every 3s
+  useEffect(() => {
+    if (!chatId) return;
+    const interval = setInterval(() => fetchMessages(chatId), 3000);
+    return () => clearInterval(interval);
+  }, [chatId]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !chatId || !user) return;
     setSending(true);
-    const { error } = await supabase.from('messages').insert({
+    const text = newMessage.trim();
+    setNewMessage('');
+
+    // Optimistic: add message to state immediately
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
       chat_id: chatId,
       sender_id: user.id,
-      text: newMessage.trim(),
-    });
-    if (!error) { setNewMessage(''); await fetchMessages(chatId); }
+      text,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    const { data, error } = await supabase.from('messages').insert({
+      chat_id: chatId,
+      sender_id: user.id,
+      text,
+    }).select().single();
+
+    if (error) {
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter(m => m.id !== optimisticMsg.id));
+      setNewMessage(text);
+      toast('error', 'Failed to send message');
+    } else if (data) {
+      // Replace optimistic with real message
+      setMessages((prev) => prev.map(m => m.id === optimisticMsg.id ? (data as Message) : m));
+    }
     setSending(false);
   };
 

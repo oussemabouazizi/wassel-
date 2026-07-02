@@ -13,7 +13,7 @@ import type { Store, Category } from '@/types';
 type StoreWithCategory = Store & { categories: Category };
 
 export default function StoresPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [stores, setStores] = useState<StoreWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,9 +62,32 @@ export default function StoresPage() {
     });
   }, [stores, search, activeCategory]);
 
+  const categoryNameMap: Record<string, { en: string; fr: string; ar: string }> = {
+    'Food': { en: 'Food', fr: 'Nourriture', ar: 'طعام' },
+    'Groceries': { en: 'Groceries', fr: 'Épicerie', ar: 'بقالة' },
+    'Pharmacy': { en: 'Pharmacy', fr: 'Pharmacie', ar: 'صيدلية' },
+    'Flowers': { en: 'Flowers', fr: 'Fleurs', ar: 'زهور' },
+    'Pets': { en: 'Pets', fr: 'Animaux', ar: 'حيوانات أليفة' },
+    'Electronics': { en: 'Electronics', fr: 'Électronique', ar: 'إلكترونيات' },
+    'Fashion': { en: 'Fashion', fr: 'Mode', ar: 'أزياء' },
+    'Sports': { en: 'Sports', fr: 'Sport', ar: 'رياضة' },
+    'Baby': { en: 'Baby', fr: 'Bébé', ar: 'أطفال' },
+    'Stationery': { en: 'Stationery', fr: 'Papeterie', ar: 'مستلزمات مكتبية' },
+    'Pizza': { en: 'Pizza', fr: 'Pizza', ar: 'بيتزا' },
+    'Burgers': { en: 'Burgers', fr: 'Burgers', ar: 'برغر' },
+    'Sushi': { en: 'Sushi', fr: 'Sushi', ar: 'سوشي' },
+    'Desserts': { en: 'Desserts', fr: 'Desserts', ar: 'حلويات' },
+  };
+
+  const getCatName = (name: string) => {
+    const translated = categoryNameMap[name];
+    if (!translated) return name;
+    return language === 'ar' ? translated.ar : language === 'fr' ? translated.fr : translated.en;
+  };
+
   const tabs = [
-    { id: 'all', label: 'All' },
-    ...categories.map((cat) => ({ id: cat.id, label: cat.name })),
+    { id: 'all', label: t('stores.all') },
+    ...categories.map((cat) => ({ id: cat.id, label: getCatName(cat.name) })),
   ];
 
   const renderSkeletons = () => (
@@ -91,14 +114,14 @@ export default function StoresPage() {
       <div className="p-4">
         <EmptyState
           icon={<StoreIcon className="w-8 h-8 text-[var(--color-error)]" />}
-          title="Something went wrong"
+          title={t('common.somethingWentWrong')}
           description={error}
           action={
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-xl text-sm font-semibold"
             >
-              Try again
+              {t('stores.tryAgain')}
             </button>
           }
         />
@@ -113,8 +136,8 @@ export default function StoresPage() {
       className="p-4 max-w-6xl mx-auto"
     >
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">Stores</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">Discover stores near you</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">{t('stores.title')}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)]">{t('stores.subtitle')}</p>
       </div>
 
       <div className="mb-4">
@@ -143,15 +166,15 @@ export default function StoresPage() {
       ) : filteredStores.length === 0 ? (
         <EmptyState
           icon={<StoreIcon className="w-8 h-8 text-[var(--color-text-secondary)]" />}
-          title="No stores found"
-          description={search ? 'Try a different search term' : 'No stores available in this category yet'}
+          title={t('stores.noStoresFound')}
+          description={search ? t('stores.noStoresSearch') : t('stores.noStoresCategory')}
           action={
             search ? (
               <button
                 onClick={() => setSearch('')}
                 className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-xl text-sm font-semibold"
               >
-                Clear search
+                {t('stores.clearSearch')}
               </button>
             ) : undefined
           }
@@ -181,7 +204,7 @@ export default function StoresPage() {
                     )}
                     {store.total_orders > 100 && (
                       <Badge variant="primary" className="absolute top-3 left-3">
-                        Popular
+                        {t('stores.popular')}
                       </Badge>
                     )}
                     <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1">
@@ -197,7 +220,7 @@ export default function StoresPage() {
                         <h3 className="font-semibold text-[var(--color-text-primary)]">{store.name}</h3>
                         {store.categories && (
                           <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                            {store.categories.name}
+                            {getCatName(store.categories.name)}
                           </p>
                         )}
                       </div>
@@ -209,14 +232,14 @@ export default function StoresPage() {
                     <div className="flex items-center gap-3 text-xs text-[var(--color-text-secondary)]">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
-                        {store.address ? store.address.split(',')[0] : 'Nearby'}
+                        {store.address ? store.address.split(',')[0] : t('stores.nearby')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
                         {store.estimated_delivery_time} min
                       </span>
                       <span className="font-semibold text-[var(--color-primary)]">
-                        {store.delivery_fee === 0 ? 'Free' : formatPrice(store.delivery_fee)}
+                        {store.delivery_fee === 0 ? t('common.free') : formatPrice(store.delivery_fee)}
                       </span>
                     </div>
                   </div>

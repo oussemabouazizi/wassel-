@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Store as StoreType, Order, OrderItem, Profile } from '@/types';
+import { useI18n } from '@/i18n';
 
 interface DashboardStats {
   totalStores: number;
@@ -23,6 +24,7 @@ export default function VendorDashboard() {
   const supabase = createClient();
   const { user } = useAppStore();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [stores, setStores] = useState<StoreType[]>([]);
   const [recentOrders, setRecentOrders] = useState<(Order & { stores: StoreType; profiles: Profile; order_items: OrderItem[] })[]>([]);
@@ -95,7 +97,7 @@ export default function VendorDashboard() {
 
       setStats({ totalStores: vendorStores.length, totalProducts, totalOrders, totalEarnings });
     } catch {
-      toast('error', 'Failed to load dashboard');
+      toast('error', t('vendor.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -107,10 +109,10 @@ export default function VendorDashboard() {
       .update({ is_open: !store.is_open })
       .eq('id', store.id);
     if (error) {
-      toast('error', 'Failed to update store status');
+      toast('error', t('vendor.storeStatusFailed'));
     } else {
       setStores(prev => prev.map(s => s.id === store.id ? { ...s, is_open: !s.is_open } : s));
-      toast('success', `${store.name} is now ${!store.is_open ? 'open' : 'closed'}`);
+      toast('success', t('vendor.storeStatusChanged', { name: store.name, status: !store.is_open ? t('store.open') : t('store.closed') }));
     }
   }
 
@@ -128,23 +130,23 @@ export default function VendorDashboard() {
   if (loading) return <DashboardSkeleton />;
 
   const statCards = [
-    { label: 'Total Stores', value: stats.totalStores, icon: Store, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Total Products', value: stats.totalProducts, icon: Package, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { label: 'Total Orders', value: stats.totalOrders, icon: ShoppingBag, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Total Earnings', value: formatPrice(stats.totalEarnings), icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
+    { label: t('vendor.totalStores'), value: stats.totalStores, icon: Store, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: t('vendor.totalProducts'), value: stats.totalProducts, icon: Package, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: t('vendor.totalOrders'), value: stats.totalOrders, icon: ShoppingBag, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: t('vendor.totalEarnings'), value: formatPrice(stats.totalEarnings), icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Vendor Dashboard</h1>
-          <p className="text-[var(--color-text-secondary)]">Welcome back, {user?.full_name}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('vendor.title')}</h1>
+          <p className="text-[var(--color-text-secondary)]">{t('vendor.welcomeBack', { name: user?.full_name || '' })}</p>
         </div>
         <Link href="/vendor/products">
           <Button variant="primary">
             <Plus className="w-4 h-4" />
-            Add Product
+            {t('vendor.addProduct')}
           </Button>
         </Link>
       </div>
@@ -175,7 +177,7 @@ export default function VendorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <Card>
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Orders Overview</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('vendor.ordersOverview')}</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -198,15 +200,15 @@ export default function VendorDashboard() {
 
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Recent Orders</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('vendor.recentOrders')}</h2>
               <Link href="/vendor/orders">
                 <Button variant="ghost" size="sm">
-                  View All
+                  {t('common.viewAll')}
                 </Button>
               </Link>
             </div>
             {recentOrders.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)] py-8 text-center">No orders yet</p>
+              <p className="text-sm text-[var(--color-text-secondary)] py-8 text-center">{t('vendor.noOrders')}</p>
             ) : (
               <div className="space-y-3">
                 {recentOrders.map((order) => (
@@ -217,7 +219,7 @@ export default function VendorDashboard() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                          Order #{order.id.substring(0, 8)}
+                          {t('vendor.orderNumber', { id: order.id.substring(0, 8) })}
                         </p>
                         <p className="text-xs text-[var(--color-text-secondary)]">
                           {order.profiles?.full_name} • {formatRelativeTime(order.created_at)}
@@ -237,27 +239,27 @@ export default function VendorDashboard() {
 
         <div className="space-y-4">
           <Card>
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Quick Actions</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('vendor.quickActions')}</h2>
             <div className="space-y-3">
               <Link href="/vendor/products">
                 <Button variant="outline" className="w-full justify-start" size="sm">
                   <Plus className="w-4 h-4" />
-                  Add Product
+            {t('vendor.addProduct')}
                 </Button>
               </Link>
               <Link href="/vendor/orders">
                 <Button variant="outline" className="w-full justify-start" size="sm">
                   <List className="w-4 h-4" />
-                  View Orders
+                   {t('vendor.viewOrders')}
                 </Button>
               </Link>
             </div>
           </Card>
 
           <Card>
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Your Stores</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{t('vendor.yourStores')}</h2>
             {stores.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)] py-4 text-center">No stores yet</p>
+              <p className="text-sm text-[var(--color-text-secondary)] py-4 text-center">{t('vendor.noStores')}</p>
             ) : (
               <div className="space-y-3">
                 {stores.map((store) => (
@@ -272,7 +274,7 @@ export default function VendorDashboard() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-[var(--color-text-primary)]">{store.name}</p>
-                        <p className="text-xs text-[var(--color-text-secondary)]">{store.total_orders} orders</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{store.total_orders} {t('vendor.ordersCount')}</p>
                       </div>
                     </div>
                     <button
@@ -284,7 +286,7 @@ export default function VendorDashboard() {
                       }`}
                     >
                       <Power className="w-3 h-3 inline mr-1" />
-                      {store.is_open ? 'Open' : 'Closed'}
+                      {store.is_open ? t('store.open') : t('store.closed')}
                     </button>
                   </div>
                 ))}

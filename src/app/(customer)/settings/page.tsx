@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { Card, Button, Toggle, Select } from '@/components/ui';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/i18n';
 
 const languages = [
   { value: 'en', label: 'English' },
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
   const { language, setLanguage, theme, toggleTheme } = useAppStore();
+  const { t } = useI18n();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -30,17 +32,17 @@ export default function SettingsPage() {
       animate={{ opacity: 1 }}
       className="p-4 max-w-2xl mx-auto space-y-6"
     >
-      <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Settings</h1>
+      <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('nav.settings')}</h1>
 
       <Card className="space-y-4">
-        <h2 className="font-semibold text-[var(--color-text-primary)]">Preferences</h2>
+        <h2 className="font-semibold text-[var(--color-text-primary)]">{t('settings.preferences')}</h2>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Sun className="w-5 h-5 text-[var(--color-text-secondary)]" />
             <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Dark Mode</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Toggle dark/light theme</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('profile.darkMode')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('settings.darkModeDesc')}</p>
             </div>
           </div>
           <button
@@ -55,8 +57,8 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <Globe className="w-5 h-5 text-[var(--color-text-secondary)]" />
             <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Language</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Choose your language</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('profile.language')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('settings.languageDesc')}</p>
             </div>
           </div>
           <Select
@@ -69,7 +71,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card className="space-y-4">
-        <h2 className="font-semibold text-[var(--color-text-primary)]">Account</h2>
+        <h2 className="font-semibold text-[var(--color-text-primary)]">{t('settings.account')}</h2>
 
         <button
           onClick={() => router.push('/profile')}
@@ -77,8 +79,8 @@ export default function SettingsPage() {
         >
           <User className="w-5 h-5 text-[var(--color-text-secondary)]" />
           <div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">Profile</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">View and edit your profile</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('nav.profile')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('settings.profileDesc')}</p>
           </div>
         </button>
 
@@ -88,8 +90,8 @@ export default function SettingsPage() {
         >
           <Bell className="w-5 h-5 text-[var(--color-text-secondary)]" />
           <div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">Notifications</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">Manage notification preferences</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings.notifications')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('settings.notificationsDesc')}</p>
           </div>
         </button>
 
@@ -99,15 +101,15 @@ export default function SettingsPage() {
         >
           <Shield className="w-5 h-5 text-[var(--color-text-secondary)]" />
           <div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">Privacy & Security</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">Manage your data and security</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings.privacySecurity')}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('settings.privacyDesc')}</p>
           </div>
         </button>
       </Card>
 
       <Button variant="danger" fullWidth onClick={handleLogout} className="!bg-red-500 hover:!bg-red-600">
         <LogOut className="w-4 h-4" />
-        Sign Out
+        {t('nav.signOut')}
       </Button>
     </motion.div>
   );

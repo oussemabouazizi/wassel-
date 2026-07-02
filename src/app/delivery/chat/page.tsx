@@ -88,21 +88,38 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedChat || !user) return;
     setSending(true);
+    const text = newMessage.trim();
+    setNewMessage('');
 
-    const { error } = await supabase
+    // Optimistic: add message to state immediately
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      chat_id: selectedChat.id,
+      sender_id: user.id,
+      text,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    const { data, error } = await supabase
       .from('messages')
       .insert({
         chat_id: selectedChat.id,
         sender_id: user.id,
-        text: newMessage.trim(),
-      });
+        text,
+      })
+      .select()
+      .single();
 
     if (error) {
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter(m => m.id !== optimisticMsg.id));
+      setNewMessage(text);
       toast('error', 'Failed to send message');
-    } else {
-      setNewMessage('');
-      await fetchMessages(selectedChat.id);
-      inputRef.current?.focus();
+    } else if (data) {
+      // Replace optimistic with real message
+      setMessages((prev) => prev.map(m => m.id === optimisticMsg.id ? (data as Message) : m));
     }
     setSending(false);
   };
@@ -118,11 +135,12 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Realtime subscription
   useEffect(() => {
     if (!selectedChat) return;
 
     const channel = supabase
-      .channel(`chat-${selectedChat.id}`)
+      .channel(`delivery-chat-${selectedChat.id}`)
       .on(
         'postgres_changes',
         {
@@ -133,15 +151,23 @@ export default function ChatPage() {
         },
         (payload) => {
           const msg = payload.new as Message;
-          if (msg.sender_id !== user?.id) {
-            setMessages((prev) => [...prev, msg]);
-          }
+          setMessages((prev) => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [selectedChat, supabase, user?.id]);
+  }, [selectedChat, supabase]);
+
+  // Polling fallback — re-fetch messages every 3s
+  useEffect(() => {
+    if (!selectedChat) return;
+    const interval = setInterval(() => fetchMessages(selectedChat.id), 3000);
+    return () => clearInterval(interval);
+  }, [selectedChat]);
 
   if (loading) {
     return (

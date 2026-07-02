@@ -46,7 +46,7 @@ export default function DeliveryDashboard() {
     } else if (dp) {
       setDeliveryPerson(dp as DeliveryPerson);
     } else {
-      setDpError('No delivery profile found. Please register as a delivery person first.');
+      setDpError(t('delivery.noProfileError'));
     }
 
     const { data: available } = await supabase
@@ -84,11 +84,11 @@ export default function DeliveryDashboard() {
       .eq('id', deliveryPerson.id);
 
     if (error) {
-      toast('error', 'Failed to update status');
+      toast('error', t('delivery.statusUpdateFailed'));
       return;
     }
     setDeliveryPerson({ ...deliveryPerson, online_status: newStatus });
-    toast('success', `You are now ${newStatus}`);
+    toast('success', t('delivery.statusChanged', { status: newStatus }));
   };
 
   const handleAcceptOrder = async (orderId: string) => {
@@ -104,7 +104,7 @@ export default function DeliveryDashboard() {
       .eq('id', orderId);
 
     if (error) {
-      toast('error', 'Failed to accept order');
+      toast('error', t('delivery.acceptFailed'));
       setActionLoading(null);
       return;
     }
@@ -115,11 +115,11 @@ export default function DeliveryDashboard() {
       delivery_person_id: user.id,
     });
 
-    if (chatErr) toast('error', 'Order accepted but chat creation failed');
+    if (chatErr) toast('error', t('delivery.chatCreationFailed'));
 
     notifyCustomerDeliveryAccepted(orderId, user.full_name || user.email, order.customer_id);
 
-    toast('success', 'Order accepted!');
+    toast('success', t('delivery.orderAccepted'));
     fetchData();
   };
 
@@ -162,7 +162,7 @@ export default function DeliveryDashboard() {
         <AlertTriangle className="w-12 h-12 text-[var(--color-error)]" />
         <p className="text-[var(--color-error)] font-medium text-center max-w-md">{dpError}</p>
         <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-md">
-          Make sure you have a delivery profile in the database. Run the RLS migration if needed.
+          {t('delivery.profileSetupHint')}
         </p>
       </div>
     );
@@ -180,7 +180,7 @@ export default function DeliveryDashboard() {
             <Bike className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-[var(--color-text-secondary)]">Online Status</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.onlineStatus')}</p>
             <button
               onClick={handleToggleOnline}
               className={`mt-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
@@ -189,7 +189,7 @@ export default function DeliveryDashboard() {
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
               }`}
             >
-              {deliveryPerson?.online_status === 'online' ? '● Online' : '○ Offline'}
+              {deliveryPerson?.online_status === 'online' ? `● ${t('delivery.online')}` : `○ ${t('delivery.offline')}`}
             </button>
           </div>
         </Card>
@@ -199,7 +199,7 @@ export default function DeliveryDashboard() {
             <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">Deliveries</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.totalDeliveries')}</p>
             <p className="text-2xl font-bold text-[var(--color-text-primary)]">{deliveryPerson?.total_deliveries || 0}</p>
           </div>
         </Card>
@@ -209,7 +209,7 @@ export default function DeliveryDashboard() {
             <Star className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">Rating</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('home.reviews')}</p>
             <p className="text-2xl font-bold text-[var(--color-text-primary)]">{deliveryPerson?.rating?.toFixed(1) || '0.0'}</p>
           </div>
         </Card>
@@ -219,7 +219,7 @@ export default function DeliveryDashboard() {
             <DollarSign className="w-6 h-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">Earnings</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.earnings')}</p>
             <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatPrice(deliveryPerson?.total_earnings || 0)}</p>
           </div>
         </Card>
@@ -232,8 +232,8 @@ export default function DeliveryDashboard() {
           {availableOrders.length === 0 ? (
             <EmptyState
               icon={<Package className="w-8 h-8 text-[var(--color-text-secondary)]" />}
-              title="No available orders"
-              description="There are no orders ready for delivery right now. Check back soon."
+              title={t('delivery.noAvailableOrders')}
+              description={t('delivery.noAvailableDesc')}
             />
           ) : (
             availableOrders.map((order, i) => (
@@ -247,11 +247,11 @@ export default function DeliveryDashboard() {
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[var(--color-text-primary)]">{order.order_number}</span>
-                      <Badge variant="success" size="sm">Ready</Badge>
+                      <Badge variant="success" size="sm">{t('orders.status.ready')}</Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <Store className="w-4 h-4" />
-                      <span>{order.stores?.name || 'Store'}</span>
+                      <span>{order.stores?.name || t('orders.store')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <MapPin className="w-4 h-4" />
@@ -282,8 +282,8 @@ export default function DeliveryDashboard() {
           {myDeliveries.length === 0 ? (
             <EmptyState
               icon={<Bike className="w-8 h-8 text-[var(--color-text-secondary)]" />}
-              title="No active deliveries"
-              description="You haven't accepted any deliveries yet. Check available orders."
+              title={t('delivery.noActiveDeliveries')}
+              description={t('delivery.noActiveDesc')}
             />
           ) : (
             myDeliveries.map((order, i) => (
@@ -301,7 +301,7 @@ export default function DeliveryDashboard() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <Store className="w-4 h-4" />
-                      <span>{order.stores?.name || 'Store'}</span>
+                      <span>{order.stores?.name || t('orders.store')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <MapPin className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function DeliveryDashboard() {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSign className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-semibold">You earn: {formatPrice(order.delivery_fee)}</span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold">{t('delivery.youEarn', { amount: formatPrice(order.delivery_fee) })}</span>
                     </div>
                   </div>
                   {order.status === 'on_the_way' && (
@@ -326,7 +326,7 @@ export default function DeliveryDashboard() {
                         }
                         notifyCustomerOrderStatus(order.id, 'delivered', order.customer_id);
                         fetchData();
-                        toast('success', 'Order delivered! Earnings updated.');
+                        toast('success', t('delivery.deliveredToast'));
                         setActionLoading(null);
                       }}
                       isLoading={actionLoading === order.id}
@@ -342,13 +342,13 @@ export default function DeliveryDashboard() {
                         setActionLoading(order.id);
                         await supabase.from('orders').update({ status: 'on_the_way' }).eq('id', order.id);
                         fetchData();
-                        toast('success', 'Order is on the way!');
+                        toast('success', t('delivery.onTheWayToast'));
                         setActionLoading(null);
                       }}
                       isLoading={actionLoading === order.id}
                     >
                       <Bike className="w-4 h-4" />
-                      On The Way
+                      {t('delivery.onTheWay')}
                     </Button>
                   )}
                 </Card>

@@ -54,9 +54,9 @@ export default function ProfilePage() {
         full_name: fullName.trim(),
         phone: phone.trim(),
       });
-      toast('success', 'Profile updated');
+      toast('success', t('profile.updateSuccess'));
     } catch (err) {
-      toast('error', 'Failed to update profile');
+      toast('error', t('profile.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -109,8 +109,8 @@ export default function ProfilePage() {
       <div className="space-y-4">
         <Card>
           <Input
-            label="Full name"
-            placeholder="Your full name"
+            label={t('auth.fullName')}
+            placeholder={t('profile.fullNamePlaceholder')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             icon={<User className="w-5 h-5" />}
@@ -119,7 +119,7 @@ export default function ProfilePage() {
 
         <Card>
           <Input
-            label="Email"
+            label={t('auth.email')}
             value={user.email}
             disabled
             icon={<Mail className="w-5 h-5" />}
@@ -128,8 +128,8 @@ export default function ProfilePage() {
 
         <Card>
           <Input
-            label="Phone"
-            placeholder="+216 XX XXX XXX"
+            label={t('auth.phone')}
+            placeholder={t('auth.phonePlaceholder')}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             icon={<Phone className="w-5 h-5" />}
@@ -144,7 +144,7 @@ export default function ProfilePage() {
           disabled={!fullName.trim()}
         >
           <Save className="w-5 h-5" />
-          Save changes
+          {t('profile.saveChanges')}
         </Button>
 
         <Button
