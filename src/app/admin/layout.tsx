@@ -5,12 +5,11 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/shared/dashboard-layout';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
-import { ToastProvider } from '@/components/ui';
-import { ConfirmProvider } from '@/components/ui';
 import {
   LayoutDashboard, UsersRound, Store, ShoppingBag, Tags,
   Bike, TicketPercent, Star, BarChart3, Settings, HeadphonesIcon, MapPin
 } from 'lucide-react';
+import AdminAiChat from '@/components/chat/admin-chat';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -49,12 +48,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [router, setUser]);
 
   return (
-    <ToastProvider>
-      <ConfirmProvider>
-        <DashboardLayout role="admin" navItems={navItems}>
-          {children}
-        </DashboardLayout>
-      </ConfirmProvider>
-    </ToastProvider>
+    <DashboardLayout role="admin" navItems={navItems}>
+      {children}
+      <AdminAiChat />
+    </DashboardLayout>
   );
 }

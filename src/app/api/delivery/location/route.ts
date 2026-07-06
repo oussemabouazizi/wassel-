@@ -15,12 +15,28 @@ export async function POST(request: Request) {
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { latitude, longitude } = body;
-  if (!latitude || !longitude) return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
+  const { latitude, longitude, online_status } = body;
+
+  const update: Record<string, any> = {};
+
+  if (online_status === 'offline') {
+    // Clear location when going offline
+    update.latitude = 0;
+    update.longitude = 0;
+    update.online_status = 'offline';
+  } else if (latitude !== undefined && longitude !== undefined) {
+    update.latitude = latitude;
+    update.longitude = longitude;
+    update.online_status = 'online';
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'No valid data' }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from('delivery_persons')
-    .update({ latitude, longitude })
+    .update(update)
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

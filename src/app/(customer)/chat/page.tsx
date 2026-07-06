@@ -86,7 +86,7 @@ export default function CustomerChatPage() {
     if (!chatId) return;
     const channel = supabase
       .channel(`customer-chat-${chatId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, (payload: any) => {
         const msg = payload.new as Message;
         setMessages((prev) => {
           if (prev.some(m => m.id === msg.id)) return prev;

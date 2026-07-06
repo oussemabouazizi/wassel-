@@ -390,7 +390,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-background)]/80 backdrop-blur-xl border-t border-[var(--color-border)] lg:hidden safe-area-bottom">
           <div className="flex items-center justify-around h-16 px-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = item.href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -404,11 +406,6 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 >
                   <div className="relative">
                     <item.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-                    {item.href === '/cart' && getCartCount() > 0 && (
-                      <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-[var(--color-primary)] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                        {getCartCount()}
-                      </span>
-                    )}
                   </div>
                   <span className="text-[10px] font-medium leading-tight">{item.label}</span>
                   {isActive && (

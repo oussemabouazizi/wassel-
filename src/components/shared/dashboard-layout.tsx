@@ -32,6 +32,11 @@ export default function DashboardLayout({ children, role, navItems }: DashboardL
 
   const handleLogout = async () => {
     const supabase = createClient();
+    if (role === 'delivery' && user) {
+      await supabase.from('delivery_persons')
+        .update({ online_status: 'offline', latitude: 0, longitude: 0 })
+        .eq('user_id', user.id);
+    }
     await supabase.auth.signOut();
     setUser(null);
     router.push('/login');

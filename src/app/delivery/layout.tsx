@@ -18,28 +18,43 @@ const navItems = [
 export default function DeliveryLayout({ children }: { children: ReactNode }) {
   const user = useAppStore((s) => s.user);
   const watchIdRef = useRef<number | null>(null);
+  const offlineSentRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
     let cancelled = false;
+    offlineSentRef.current = false;
 
     const sendLocation = async (lat: number, lng: number) => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token || cancelled) return;
-        await fetch('/api/delivery/location', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ latitude: lat, longitude: lng }),
-        });
-      } catch {}
+      if (cancelled) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      await fetch('/api/delivery/location', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ latitude: lat, longitude: lng }),
+      }).catch(() => {});
+    };
+
+    const goOffline = () => {
+      if (offlineSentRef.current) return;
+      offlineSentRef.current = true;
+      // Set offline directly in DB via Supabase client (has auth internally)
+      // Can't use fetch/AJAX in beforeunload — browser kills async
+      supabase.from('delivery_persons')
+        .update({ online_status: 'offline', latitude: 0, longitude: 0 })
+        .eq('user_id', user.id)
+        .then(() => {});
     };
 
     const startTracking = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+
       // Set online
       await supabase.from('delivery_persons')
         .update({ online_status: 'online' })
@@ -47,7 +62,6 @@ export default function DeliveryLayout({ children }: { children: ReactNode }) {
 
       // Start GPS tracking
       if ('geolocation' in navigator) {
-        // Send current position immediately
         navigator.geolocation.getCurrentPosition(
           (pos) => sendLocation(pos.coords.latitude, pos.coords.longitude),
           () => {},
@@ -64,26 +78,15 @@ export default function DeliveryLayout({ children }: { children: ReactNode }) {
 
     startTracking();
 
-    const handleBeforeUnload = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        await supabase.from('delivery_persons')
-          .update({ online_status: 'offline' })
-          .eq('user_id', user.id);
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('beforeunload', goOffline);
 
     return () => {
       cancelled = true;
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('beforeunload', goOffline);
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
-      supabase.from('delivery_persons')
-        .update({ online_status: 'offline' })
-        .eq('user_id', user.id)
-        .then(() => {});
+      goOffline();
     };
   }, [user]);
 

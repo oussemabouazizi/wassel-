@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { MapPin, Plus, CreditCard, Store, ShoppingCart, TicketPercent, X, ChevronLeft, AlertCircle } from 'lucide-react';
-import { Button, Card, Input, Textarea, Badge, EmptyState, Skeleton } from '@/components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MapPin, Plus, CreditCard, Store, ShoppingCart, TicketPercent, X, ChevronLeft, AlertCircle, Navigation, Loader2, Check } from 'lucide-react';
+import { Button, Input, Textarea, Badge, EmptyState, Skeleton } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { formatPrice, cn } from '@/lib/utils';
 import { useAppStore } from '@/store';
@@ -38,6 +38,10 @@ export default function CheckoutPage() {
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
   const [promoError, setPromoError] = useState('');
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [shareLocation, setShareLocation] = useState(false);
+  const [liveLocation, setLiveLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [step, setStep] = useState(1); // 1: address, 2: items, 3: payment
 
   const deliveryFee = storeDeliveryFee;
   const discount = appliedPromo
@@ -67,7 +71,7 @@ export default function CheckoutPage() {
 
         if (error) throw error;
         setAddresses(data || []);
-        const defaultAddr = data?.find((a) => a.is_default) || data?.[0];
+        const defaultAddr = data?.find((a: any) => a.is_default) || data?.[0];
         if (defaultAddr) setSelectedAddressId(defaultAddr.id);
       } catch (err) {
         toast('error', t('checkout.failedLoadAddresses'));
@@ -95,6 +99,29 @@ export default function CheckoutPage() {
       router.push('/stores');
     }
   }, [cart, loading, router, toast, t]);
+
+  useEffect(() => {
+    if (!shareLocation) {
+      setLiveLocation(null);
+      return;
+    }
+    setGettingLocation(true);
+    const watchId = navigator.geolocation?.watchPosition(
+      (pos) => {
+        setLiveLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGettingLocation(false);
+      },
+      () => {
+        setGettingLocation(false);
+        setShareLocation(false);
+        toast('error', t('checkout.locationDenied'));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+    return () => {
+      if (watchId !== undefined) navigator.geolocation?.clearWatch(watchId);
+    };
+  }, [shareLocation, toast, t]);
 
   const handleAddAddress = async () => {
     if (!newLabel.trim() || !newAddress.trim() || !user) return;
@@ -215,8 +242,8 @@ export default function CheckoutPage() {
           total: total,
           delivery_address_id: selectedAddressId,
           delivery_address: selectedAddress?.address || '',
-          delivery_latitude: selectedAddress?.latitude || 0,
-          delivery_longitude: selectedAddress?.longitude || 0,
+          delivery_latitude: liveLocation?.lat || selectedAddress?.latitude || 0,
+          delivery_longitude: liveLocation?.lng || selectedAddress?.longitude || 0,
           notes: notes || null,
           tip: 0,
           promo_code_id: appliedPromo?.id || null,
@@ -269,11 +296,11 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <div className="p-4 max-w-2xl mx-auto">
-        <Skeleton className="h-8 w-1/3 mb-6" />
-        <Skeleton className="h-32 rounded-2xl mb-4" />
-        <Skeleton className="h-40 rounded-2xl mb-4" />
-        <Skeleton className="h-24 rounded-2xl" />
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-32 rounded-3xl" />
+        <Skeleton className="h-40 rounded-3xl" />
+        <Skeleton className="h-24 rounded-3xl" />
       </div>
     );
   }
@@ -294,212 +321,368 @@ export default function CheckoutPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="p-4 max-w-2xl mx-auto pb-32"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-xl hover:bg-[var(--color-surface)] transition-colors"
-          aria-label={t('common.back')}
-        >
-          <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('checkout.placeOrder')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)]">{t('checkout.reviewOrder')}</p>
-        </div>
+    <div className="relative min-h-screen">
+      {/* Ambient background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-80 h-80 bg-gradient-to-br from-[#FF6B00]/8 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -left-32 w-64 h-64 bg-gradient-to-tr from-emerald-300/6 to-transparent rounded-full blur-3xl" />
       </div>
 
-      <div className="space-y-4">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
-              {t('checkout.deliveryAddress')}
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              <Plus className="w-4 h-4" />
-              {t('common.add')}
-            </Button>
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto pb-32">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center gap-3 mb-6"
+        >
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl bg-[var(--color-surface)] flex items-center justify-center hover:bg-[var(--color-border)]/50 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight">{t('checkout.placeOrder')}</h1>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('checkout.reviewOrder')}</p>
           </div>
+        </motion.div>
 
-          {addresses.length === 0 && !showAddForm ? (
-            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-              {t('checkout.noAddresses')}
-            </p>
-          ) : (
-            <div className="space-y-2 mb-3">
-              {addresses.map((addr) => (
-                <button
-                  key={addr.id}
-                  onClick={() => setSelectedAddressId(addr.id)}
-                  className={cn(
-                    'w-full text-left p-3 rounded-xl border-2 transition-all',
-                    selectedAddressId === addr.id
-                      ? 'border-[var(--color-primary)] bg-orange-50 dark:bg-orange-900/10'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/30'
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-[var(--color-text-primary)]">{addr.label}</span>
-                    {addr.is_default && <Badge variant="primary" size="sm">{t('common.default')}</Badge>}
-                  </div>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{addr.address}</p>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {showAddForm && (
-            <div className="space-y-3 pt-3 border-t border-[var(--color-border)]">
-              <Input
-                label={t('checkout.addLabel')}
-                placeholder={t('checkout.labelPlaceholder')}
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-              />
-              <Input
-                label={t('checkout.addressLabel')}
-                placeholder={t('checkout.addressPlaceholder')}
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleAddAddress}
-                  isLoading={addingAddress}
-                  disabled={!newLabel.trim() || !newAddress.trim()}
-                >
-                  {t('checkout.saveAddress')}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        <Card>
-          <h3 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
-            <Store className="w-4 h-4 text-[var(--color-primary)]" />
-            {t('checkout.orderItems')}
-          </h3>
-          <div className="space-y-2">
-            {cart.map((item) => (
-              <div key={item.product.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm text-[var(--color-text-secondary)] shrink-0">{item.quantity}x</span>
-                  <span className="text-sm text-[var(--color-text-primary)] truncate">{item.product.name}</span>
-                </div>
-                <span className="text-sm font-medium text-[var(--color-text-primary)] shrink-0">
-                  {formatPrice(item.product.price * item.quantity)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">{t('checkout.totalBreakdown')}</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[var(--color-text-secondary)]">{t('checkout.subtotal')}</span>
-              <span className="font-medium text-[var(--color-text-primary)]">{formatPrice(getCartTotal())}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--color-text-secondary)]">{t('checkout.deliveryFee')}</span>
-              <span className="font-medium text-[var(--color-text-primary)]">
-                {deliveryFee === 0 ? <span className="text-green-500">{t('common.free')}</span> : formatPrice(deliveryFee)}
-              </span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-[var(--color-text-secondary)]">{t('checkout.discount')}</span>
-                <span className="font-medium text-green-500">-{formatPrice(discount)}</span>
-              </div>
-            )}
-            <div className="border-t border-[var(--color-border)] pt-2 flex justify-between">
-              <span className="font-semibold text-[var(--color-text-primary)]">{t('checkout.total')}</span>
-              <span className="font-bold text-[var(--color-primary)] text-lg">{formatPrice(total)}</span>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <Textarea
-            label={t('checkout.orderNotes')}
-            placeholder={t('checkout.orderNotesPlaceholder')}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-          />
-        </Card>
-
-        <Card>
-          <h3 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
-            <TicketPercent className="w-4 h-4 text-[var(--color-primary)]" />
-            {t('checkout.promoCode')}
-          </h3>
-          {appliedPromo ? (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <div>
-                <span className="font-mono font-bold text-green-700 dark:text-green-400">{appliedPromo.code}</span>
-                <span className="text-sm text-green-600 dark:text-green-300 ml-2">
-                  {appliedPromo.discount_percent > 0
-                    ? `${appliedPromo.discount_percent}% off`
-                    : `${formatPrice(appliedPromo.discount_amount)} off`}
-                </span>
-              </div>
-              <button onClick={handleRemovePromo} className="p-1 rounded-lg hover:bg-green-100 dark:hover:bg-green-800/40">
-                <X className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('checkout.enterPromoCode')}
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                className="flex-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
-              />
-              <Button
-                onClick={handleApplyPromo}
-                isLoading={validatingPromo}
-                disabled={!promoCode.trim()}
-                variant="outline"
+        {/* Step indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex items-center gap-2 mb-6"
+        >
+          {[
+            { n: 1, label: t('checkout.deliveryAddress') },
+            { n: 2, label: t('checkout.orderItems') },
+            { n: 3, label: t('checkout.totalBreakdown') },
+          ].map((s, i) => (
+            <div key={s.n} className="flex items-center gap-2 flex-1">
+              <button
+                onClick={() => setStep(s.n)}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all',
+                  step === s.n
+                    ? 'bg-gradient-to-r from-[#FF6B00] to-[#E55A00] text-white shadow-lg shadow-orange-500/20'
+                    : step > s.n
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                    : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)]'
+                )}
               >
-                {t('checkout.apply')}
-              </Button>
+                {step > s.n ? <Check className="w-3.5 h-3.5" /> : <span>{s.n}</span>}
+                <span className="hidden sm:inline truncate">{s.label}</span>
+              </button>
+              {i < 2 && <div className={cn('w-4 h-0.5 shrink-0', step > s.n ? 'bg-emerald-400' : 'bg-[var(--color-border)]')} />}
             </div>
-          )}
-          {promoError && (
-            <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" /> {promoError}
-            </p>
-          )}
-        </Card>
+          ))}
+        </motion.div>
 
-        <Button
-          fullWidth
-          size="lg"
-          isLoading={submitting}
-          onClick={handlePlaceOrder}
-          disabled={!selectedAddressId}
-        >
-          <CreditCard className="w-5 h-5" />
-          {t('checkout.placeOrder')} - {formatPrice(total)}
-        </Button>
+        {/* Address section */}
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#FF6B00]" />
+                    {t('checkout.deliveryAddress')}
+                  </h3>
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#FF6B00] bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('common.add')}
+                  </button>
+                </div>
+
+                {addresses.length === 0 && !showAddForm ? (
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-3">{t('checkout.noAddresses')}</p>
+                ) : (
+                  <div className="space-y-2 mb-3">
+                    {addresses.map((addr) => (
+                      <motion.button
+                        key={addr.id}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                        className={cn(
+                          'w-full text-left p-3.5 rounded-xl border-2 transition-all',
+                          selectedAddressId === addr.id
+                            ? 'border-[#FF6B00] bg-[#FF6B00]/5 shadow-md shadow-orange-500/5'
+                            : 'border-[var(--color-border)]/50 hover:border-[#FF6B00]/30'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-[var(--color-text-primary)]">{addr.label}</span>
+                          {addr.is_default && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#FF6B00] text-white">{t('common.default')}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{addr.address}</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+
+                {showAddForm && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 pt-3 border-t border-[var(--color-border)]/50"
+                  >
+                    <Input
+                      label={t('checkout.addLabel')}
+                      placeholder={t('checkout.labelPlaceholder')}
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                    />
+                    <Input
+                      label={t('checkout.addressLabel')}
+                      placeholder={t('checkout.addressPlaceholder')}
+                      value={newAddress}
+                      onChange={(e) => setNewAddress(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)} className="flex-1">
+                        {t('common.cancel')}
+                      </Button>
+                      <Button size="sm" onClick={handleAddAddress} isLoading={addingAddress} disabled={!newLabel.trim() || !newAddress.trim()} className="flex-1 bg-gradient-to-r from-[#FF6B00] to-[#E55A00]">
+                        {t('checkout.saveAddress')}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Share Live Location */}
+                <div className="pt-3 mt-3 border-t border-[var(--color-border)]/50">
+                  <button
+                    onClick={() => setShareLocation(!shareLocation)}
+                    className="w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all"
+                    style={{
+                      borderColor: shareLocation ? '#FF6B00' : 'var(--color-border)',
+                      backgroundColor: shareLocation ? 'rgba(255,107,0,0.05)' : 'transparent',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                        {gettingLocation ? (
+                          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                        ) : (
+                          <Navigation className="w-5 h-5 text-emerald-500" />
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-[var(--color-text-primary)]">{t('checkout.shareLiveLocation')}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">
+                          {liveLocation
+                            ? `${liveLocation.lat.toFixed(4)}, ${liveLocation.lng.toFixed(4)}`
+                            : t('checkout.shareLiveLocationDesc')}
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className="w-10 h-6 rounded-full transition-colors flex items-center px-0.5"
+                      style={{ backgroundColor: shareLocation ? '#FF6B00' : 'var(--color-border)' }}
+                    >
+                      <motion.div
+                        className="w-5 h-5 bg-white rounded-full shadow"
+                        animate={{ x: shareLocation ? 16 : 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setStep(2)}
+                disabled={!selectedAddressId}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FF6B00] to-[#E55A00] text-white font-bold shadow-lg shadow-orange-500/20 disabled:opacity-50"
+              >
+                {t('common.continue')}
+              </motion.button>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5">
+                <h3 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
+                  <Store className="w-4 h-4 text-[#FF6B00]" />
+                  {t('checkout.orderItems')}
+                </h3>
+                <div className="space-y-2.5">
+                  {cart.map((item) => (
+                    <div key={item.product.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-[var(--color-surface)] flex items-center justify-center text-xs font-bold text-[var(--color-text-secondary)]">
+                          {item.quantity}x
+                        </span>
+                        <span className="text-sm text-[var(--color-text-primary)] truncate font-medium">{item.product.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)] shrink-0">
+                        {formatPrice(item.product.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5">
+                <Textarea
+                  label={t('checkout.orderNotes')}
+                  placeholder={t('checkout.orderNotesPlaceholder')}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="flex-1 py-3.5 rounded-2xl border border-[var(--color-border)] font-bold text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors">
+                  {t('common.back')}
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setStep(3)}
+                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF6B00] to-[#E55A00] text-white font-bold shadow-lg shadow-orange-500/20"
+                >
+                  {t('common.continue')}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              {/* Promo code */}
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5">
+                <h3 className="font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
+                  <TicketPercent className="w-4 h-4 text-[#FF6B00]" />
+                  {t('checkout.promoCode')}
+                </h3>
+                {appliedPromo ? (
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800/30">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500" />
+                      <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{appliedPromo.code}</span>
+                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                        {appliedPromo.discount_percent > 0 ? `${appliedPromo.discount_percent}% off` : `${formatPrice(appliedPromo.discount_amount)} off`}
+                      </span>
+                    </div>
+                    <button onClick={handleRemovePromo} className="p-1 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-800/40">
+                      <X className="w-4 h-4 text-emerald-600" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t('checkout.enterPromoCode')}
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      className="flex-1"
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                    />
+                    <Button onClick={handleApplyPromo} isLoading={validatingPromo} disabled={!promoCode.trim()} variant="outline" className="shrink-0">
+                      {t('checkout.apply')}
+                    </Button>
+                  </div>
+                )}
+                {promoError && (
+                  <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {promoError}
+                  </p>
+                )}
+              </div>
+
+              {/* Price breakdown */}
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5">
+                <h3 className="font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-[#FF6B00]" />
+                  {t('checkout.totalBreakdown')}
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-text-secondary)]">{t('checkout.subtotal')}</span>
+                    <span className="font-bold text-[var(--color-text-primary)]">{formatPrice(getCartTotal())}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-text-secondary)]">{t('checkout.deliveryFee')}</span>
+                    <span className="font-bold text-[var(--color-text-primary)]">
+                      {deliveryFee === 0 ? <span className="text-emerald-500">{t('common.free')}</span> : formatPrice(deliveryFee)}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-[var(--color-text-secondary)]">{t('checkout.discount')}</span>
+                      <span className="font-bold text-emerald-500">-{formatPrice(discount)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-[var(--color-border)]/50 pt-3">
+                    <div className="flex justify-between">
+                      <span className="font-bold text-[var(--color-text-primary)]">{t('checkout.total')}</span>
+                      <span className="font-extrabold text-[var(--color-primary)] text-xl">{formatPrice(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep(2)} className="flex-1 py-3.5 rounded-2xl border border-[var(--color-border)] font-bold text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors">
+                  {t('common.back')}
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handlePlaceOrder}
+                  disabled={!selectedAddressId || submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF6B00] to-[#E55A00] text-white font-extrabold shadow-xl shadow-orange-500/25 hover:shadow-2xl transition-all duration-300 disabled:opacity-50"
+                >
+                  {submitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                  {t('checkout.placeOrder')} · {formatPrice(total)}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </motion.div>
+
+      <style jsx global>{`
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

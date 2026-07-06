@@ -149,7 +149,7 @@ export default function ChatPage() {
           table: 'messages',
           filter: `chat_id=eq.${selectedChat.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           const msg = payload.new as Message;
           setMessages((prev) => {
             if (prev.some(m => m.id === msg.id)) return prev;

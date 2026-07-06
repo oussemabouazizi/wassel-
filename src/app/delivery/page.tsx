@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package, MapPin, Store, Star, DollarSign, Bike, ChevronRight,
-  Clock, CheckCircle, XCircle, WifiOff, AlertTriangle
+  Clock, CheckCircle, WifiOff, AlertTriangle, Navigation
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
-import { Button, Card, Badge, Tabs, Skeleton, EmptyState } from '@/components/ui';
+import { Button, Badge, Tabs, Skeleton, EmptyState } from '@/components/ui';
 import { useToast } from '@/components/ui';
-import { formatPrice, formatRelativeTime } from '@/lib/utils';
+import { formatPrice, formatRelativeTime, cn } from '@/lib/utils';
 import { notifyCustomerDeliveryAccepted, notifyCustomerOrderStatus } from '@/lib/notify';
 import type { Order, DeliveryPerson } from '@/types';
 import { useI18n } from '@/i18n';
@@ -143,7 +143,7 @@ export default function DeliveryDashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
@@ -159,8 +159,15 @@ export default function DeliveryDashboard() {
   if (dpError && !deliveryPerson) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <AlertTriangle className="w-12 h-12 text-[var(--color-error)]" />
-        <p className="text-[var(--color-error)] font-medium text-center max-w-md">{dpError}</p>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+          className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center"
+        >
+          <AlertTriangle className="w-8 h-8 text-red-500" />
+        </motion.div>
+        <p className="text-red-500 font-bold text-center max-w-md">{dpError}</p>
         <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-md">
           {t('delivery.profileSetupHint')}
         </p>
@@ -168,195 +175,275 @@ export default function DeliveryDashboard() {
     );
   }
 
+  const statCards = [
+    {
+      label: t('delivery.onlineStatus'),
+      value: deliveryPerson?.online_status === 'online' ? t('delivery.online') : t('delivery.offline'),
+      icon: Bike,
+      gradient: deliveryPerson?.online_status === 'online' ? 'from-emerald-500 to-green-600' : 'from-gray-400 to-gray-500',
+      action: (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleToggleOnline}
+          className={cn(
+            'mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all',
+            deliveryPerson?.online_status === 'online'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+          )}
+        >
+          {deliveryPerson?.online_status === 'online' ? `● ${t('delivery.online')}` : `○ ${t('delivery.offline')}`}
+        </motion.button>
+      ),
+    },
+    {
+      label: t('delivery.totalDeliveries'),
+      value: deliveryPerson?.total_deliveries || 0,
+      icon: Package,
+      gradient: 'from-blue-500 to-indigo-600',
+    },
+    {
+      label: t('home.reviews'),
+      value: deliveryPerson?.rating?.toFixed(1) || '0.0',
+      icon: Star,
+      gradient: 'from-yellow-500 to-amber-600',
+    },
+    {
+      label: t('delivery.earnings'),
+      value: formatPrice(deliveryPerson?.total_earnings || 0),
+      icon: DollarSign,
+      gradient: 'from-[#FF6B00] to-red-500',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <Bike className="w-6 h-6 text-green-600 dark:text-green-400" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.onlineStatus')}</p>
-            <button
-              onClick={handleToggleOnline}
-              className={`mt-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                deliveryPerson?.online_status === 'online'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-              }`}
+    <div className="relative">
+      {/* Ambient background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-80 h-80 bg-gradient-to-br from-emerald-300/6 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -left-32 w-64 h-64 bg-gradient-to-tr from-[#FF6B00]/6 to-transparent rounded-full blur-3xl" />
+      </div>
+
+      <div className="space-y-6">
+        {/* Stat cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        >
+          {statCards.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
             >
-              {deliveryPerson?.online_status === 'online' ? `● ${t('delivery.online')}` : `○ ${t('delivery.offline')}`}
-            </button>
-          </div>
-        </Card>
+              <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-4 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 group">
+                <div className="flex items-start justify-between mb-2">
+                  <div className={cn(
+                    'w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform duration-300',
+                    stat.gradient
+                  )}>
+                    <stat.icon className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-xl font-extrabold text-[var(--color-text-primary)] mt-2">{stat.value}</p>
+                <p className="text-[11px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider mt-0.5">{stat.label}</p>
+                {stat.action}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.totalDeliveries')}</p>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{deliveryPerson?.total_deliveries || 0}</p>
-          </div>
-        </Card>
+        {/* Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+        </motion.div>
 
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-            <Star className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-          </div>
-          <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('home.reviews')}</p>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{deliveryPerson?.rating?.toFixed(1) || '0.0'}</p>
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-          </div>
-          <div>
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('delivery.earnings')}</p>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatPrice(deliveryPerson?.total_earnings || 0)}</p>
-          </div>
-        </Card>
-      </motion.div>
-
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-
-      {activeTab === 'available' && (
-        <div className="space-y-4">
-          {availableOrders.length === 0 ? (
-            <EmptyState
-              icon={<Package className="w-8 h-8 text-[var(--color-text-secondary)]" />}
-              title={t('delivery.noAvailableOrders')}
-              description={t('delivery.noAvailableDesc')}
-            />
-          ) : (
-            availableOrders.map((order, i) => (
+        {/* Available Orders */}
+        {activeTab === 'available' && (
+          <div className="space-y-3">
+            {availableOrders.length === 0 ? (
               <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
               >
-                <Card hover className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[var(--color-text-primary)]">{order.order_number}</span>
-                      <Badge variant="success" size="sm">{t('orders.status.ready')}</Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <Store className="w-4 h-4" />
-                      <span>{order.stores?.name || t('orders.store')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <MapPin className="w-4 h-4" />
-                      <span>{order.delivery_address}</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="text-[var(--color-primary)] font-semibold">{formatPrice(order.delivery_fee)}</span>
-                      <span className="text-[var(--color-text-secondary)]">{formatRelativeTime(order.created_at)}</span>
+                <EmptyState
+                  icon={<Package className="w-8 h-8 text-[var(--color-text-secondary)]" />}
+                  title={t('delivery.noAvailableOrders')}
+                  description={t('delivery.noAvailableDesc')}
+                />
+              </motion.div>
+            ) : (
+              availableOrders.map((order, i) => (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5 hover:shadow-lg hover:shadow-black/5 hover:border-emerald-300/30 transition-all duration-300 group">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex-1 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-[var(--color-text-primary)]">{order.order_number}</span>
+                          <Badge variant="success" size="sm">{t('orders.status.ready')}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <Store className="w-4 h-4 text-[#FF6B00]" />
+                          <span className="font-medium">{order.stores?.name || t('orders.store')}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <MapPin className="w-4 h-4 text-red-500" />
+                          <span>{order.delivery_address}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{formatPrice(order.delivery_fee)}</span>
+                          <span className="text-[var(--color-text-secondary)] flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(order.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleAcceptOrder(order.id)}
+                        disabled={actionLoading === order.id}
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-xl transition-all disabled:opacity-50"
+                      >
+                        {actionLoading === order.id ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Navigation className="w-4 h-4" />
+                        )}
+                        {t('delivery.acceptOrder')}
+                      </motion.button>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleAcceptOrder(order.id)}
-                    isLoading={actionLoading === order.id}
-                  >
-                    {t('delivery.acceptOrder')}
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </Card>
-              </motion.div>
-            ))
-          )}
-        </div>
-      )}
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
 
-      {activeTab === 'mine' && (
-        <div className="space-y-4">
-          {myDeliveries.length === 0 ? (
-            <EmptyState
-              icon={<Bike className="w-8 h-8 text-[var(--color-text-secondary)]" />}
-              title={t('delivery.noActiveDeliveries')}
-              description={t('delivery.noActiveDesc')}
-            />
-          ) : (
-            myDeliveries.map((order, i) => (
+        {/* My Deliveries */}
+        {activeTab === 'mine' && (
+          <div className="space-y-3">
+            {myDeliveries.length === 0 ? (
               <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
               >
-                <Card hover className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[var(--color-text-primary)]">{order.order_number}</span>
-                      {statusBadge(order.status)}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <Store className="w-4 h-4" />
-                      <span>{order.stores?.name || t('orders.store')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <MapPin className="w-4 h-4" />
-                      <span>{order.delivery_address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-semibold">{t('delivery.youEarn', { amount: formatPrice(order.delivery_fee) })}</span>
+                <EmptyState
+                  icon={<Bike className="w-8 h-8 text-[var(--color-text-secondary)]" />}
+                  title={t('delivery.noActiveDeliveries')}
+                  description={t('delivery.noActiveDesc')}
+                />
+              </motion.div>
+            ) : (
+              myDeliveries.map((order, i) => (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)]/50 p-5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex-1 space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-[var(--color-text-primary)]">{order.order_number}</span>
+                          {statusBadge(order.status)}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <Store className="w-4 h-4 text-[#FF6B00]" />
+                          <span className="font-medium">{order.stores?.name || t('orders.store')}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <MapPin className="w-4 h-4 text-red-500" />
+                          <span>{order.delivery_address}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="w-4 h-4 text-emerald-500" />
+                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{t('delivery.youEarn', { amount: formatPrice(order.delivery_fee) })}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {order.status === 'on_the_way' && (
+                          <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={async () => {
+                              setActionLoading(order.id);
+                              await supabase.from('orders').update({ status: 'delivered' }).eq('id', order.id);
+                              if (deliveryPerson) {
+                                await supabase.from('delivery_persons').update({
+                                  total_earnings: (deliveryPerson.total_earnings || 0) + order.delivery_fee,
+                                  total_deliveries: (deliveryPerson.total_deliveries || 0) + 1,
+                                }).eq('id', deliveryPerson.id);
+                              }
+                              notifyCustomerOrderStatus(order.id, 'delivered', order.customer_id);
+                              fetchData();
+                              toast('success', t('delivery.deliveredToast'));
+                              setActionLoading(null);
+                            }}
+                            disabled={actionLoading === order.id}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-xl transition-all"
+                          >
+                            {actionLoading === order.id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                            {t('delivery.delivered')}
+                          </motion.button>
+                        )}
+                        {order.status === 'picked_up' && (
+                          <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={async () => {
+                              setActionLoading(order.id);
+                              await supabase.from('orders').update({ status: 'on_the_way' }).eq('id', order.id);
+                              fetchData();
+                              toast('success', t('delivery.onTheWayToast'));
+                              setActionLoading(null);
+                            }}
+                            disabled={actionLoading === order.id}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-red-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all"
+                          >
+                            {actionLoading === order.id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Navigation className="w-4 h-4" />
+                            )}
+                            {t('delivery.onTheWay')}
+                          </motion.button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {order.status === 'on_the_way' && (
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        setActionLoading(order.id);
-                        await supabase.from('orders').update({ status: 'delivered' }).eq('id', order.id);
-                        if (deliveryPerson) {
-                          await supabase.from('delivery_persons').update({
-                            total_earnings: (deliveryPerson.total_earnings || 0) + order.delivery_fee,
-                            total_deliveries: (deliveryPerson.total_deliveries || 0) + 1,
-                          }).eq('id', deliveryPerson.id);
-                        }
-                        notifyCustomerOrderStatus(order.id, 'delivered', order.customer_id);
-                        fetchData();
-                        toast('success', t('delivery.deliveredToast'));
-                        setActionLoading(null);
-                      }}
-                      isLoading={actionLoading === order.id}
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      {t('delivery.delivered')}
-                    </Button>
-                  )}
-                  {order.status === 'picked_up' && (
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        setActionLoading(order.id);
-                        await supabase.from('orders').update({ status: 'on_the_way' }).eq('id', order.id);
-                        fetchData();
-                        toast('success', t('delivery.onTheWayToast'));
-                        setActionLoading(null);
-                      }}
-                      isLoading={actionLoading === order.id}
-                    >
-                      <Bike className="w-4 h-4" />
-                      {t('delivery.onTheWay')}
-                    </Button>
-                  )}
-                </Card>
-              </motion.div>
-            ))
-          )}
-        </div>
-      )}
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <style jsx global>{`
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

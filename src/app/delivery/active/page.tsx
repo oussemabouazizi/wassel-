@@ -125,18 +125,22 @@ export default function ActiveDeliveriesPage() {
                   )}
                 </div>
 
-                <div className="space-y-3 p-3 rounded-xl bg-[var(--color-surface)]">
+                  <div className="space-y-3 p-3 rounded-xl bg-[var(--color-surface)]">
                   <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
                     <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
                     Delivery - {order.delivery_address}
                   </div>
-                  <button
-                    onClick={() => openInMaps(order.delivery_latitude, order.delivery_longitude, order.delivery_address)}
-                    className="flex items-center gap-2 text-sm text-[var(--color-primary)] hover:underline"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    Navigate to customer
-                  </button>
+                  {order.delivery_latitude !== 0 && order.delivery_longitude !== 0 ? (
+                    <button
+                      onClick={() => openInMaps(order.delivery_latitude, order.delivery_longitude, order.delivery_address)}
+                      className="flex items-center gap-2 text-sm text-[var(--color-primary)] hover:underline"
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Navigate to customer
+                    </button>
+                  ) : (
+                    <p className="text-xs text-[var(--color-text-secondary)]">{order.delivery_address || 'No location shared'}</p>
+                  )}
                 </div>
               </div>
 
