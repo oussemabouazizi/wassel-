@@ -1,0 +1,133 @@
+
+> wassel@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.3.9
+   - Local:        http://localhost:3000
+   - Network:      http://26.98.125.245:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.6s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1888ms (162 modules)
+ ○ Compiling /api/chat ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (102kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (250kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /api/chat in 3.9s (408 modules)
+ POST /api/chat 200 in 5717ms
+ POST /api/chat 200 in 2282ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 6s (1862 modules)
+ GET /admin 200 in 6498ms
+ ✓ Compiled /_not-found in 430ms (1849 modules)
+ GET /_next/static/chunks/main-app.js?v=1783207032161 404 in 727ms
+ ✓ Compiled /favicon.ico in 193ms (1003 modules)
+ GET /favicon.ico 200 in 296ms
+ GET /admin 200 in 249ms
+ GET /_next/static/chunks/main-app.js?v=1783207049243 404 in 61ms
+ GET /favicon.ico 200 in 23ms
+ ○ Compiling /admin/users ...
+ ✓ Compiled /admin/users in 590ms (1878 modules)
+ GET /admin/users 200 in 817ms
+ GET /_next/static/chunks/main-app.js?v=1783207051834 404 in 56ms
+ GET /admin 200 in 101ms
+ GET /_next/static/chunks/main-app.js?v=1783207053147 404 in 56ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 38ms
+ GET /_next/static/chunks/app/admin/LayoutGroupContext.mjs.map 404 in 92ms
+ GET /_next/static/chunks/app/LayoutGroupContext.mjs.map 404 in 95ms
+ GET /_next/static/chunks/app/admin/LayoutGroupContext.mjs.map 404 in 99ms
+ GET /_next/static/chunks/app/LayoutGroupContext.mjs.map 404 in 102ms
+ GET /_next/static/chunks/app/LayoutGroupContext.mjs.map 404 in 65ms
+ GET /admin 200 in 151ms
+ GET /_next/static/chunks/main-app.js?v=1783207069232 404 in 74ms
+ GET /favicon.ico 200 in 33ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1890ms (2212 modules)
+ GET /admin 404 in 2248ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 85ms
+ GET /admin 200 in 268ms
+ GET /_next/static/css/app/layout.css?v=1783207087423 404 in 158ms
+ GET /_next/static/chunks/app/error.js 404 in 167ms
+ GET /_next/static/chunks/app/layout.js 404 in 169ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 170ms
+ GET /_next/static/chunks/main-app.js?v=1783207087423 404 in 170ms
+ GET /_next/static/chunks/app/not-found.js 404 in 220ms
+ GET /_next/static/chunks/app/admin/page.js 404 in 118ms
+ GET /_next/static/chunks/app/admin/layout.js 404 in 125ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 31ms
+ GET /admin 200 in 102ms
+ GET /_next/static/chunks/app/layout.js 404 in 215ms
+ GET /_next/static/chunks/app/error.js 404 in 217ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 220ms
+ GET /_next/static/chunks/main-app.js?v=1783207091312 404 in 222ms
+ GET /_next/static/css/app/layout.css?v=1783207091312 404 in 230ms
+ GET /_next/static/chunks/app/not-found.js 404 in 278ms
+ GET /_next/static/chunks/app/admin/page.js 404 in 74ms
+ GET /_next/static/chunks/app/admin/layout.js 404 in 77ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 24ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 36ms
+ GET /admin 200 in 149ms
+ GET /_next/static/chunks/app/layout.js 404 in 171ms
+ GET /_next/static/chunks/app/error.js 404 in 172ms
+ GET /_next/static/chunks/main-app.js?v=1783207095556 404 in 174ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 175ms
+ GET /_next/static/css/app/layout.css?v=1783207095556 404 in 181ms
+ GET /_next/static/chunks/app/not-found.js 404 in 208ms
+ GET /_next/static/chunks/app/admin/page.js 404 in 73ms
+ GET /_next/static/chunks/app/admin/layout.js 404 in 74ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 26ms
+ GET /admin 200 in 199ms
+ GET /_next/static/chunks/app/layout.js 404 in 236ms
+ GET /_next/static/chunks/app/error.js 404 in 237ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 238ms
+ GET /_next/static/chunks/main-app.js?v=1783207097894 404 in 239ms
+ GET /_next/static/css/app/layout.css?v=1783207097894 404 in 246ms
+ GET /_next/static/chunks/app/not-found.js 404 in 277ms
+ GET /_next/static/chunks/app/admin/layout.js 404 in 73ms
+ GET /_next/static/chunks/app/admin/page.js 404 in 80ms
+ ⨯ [Error: ENOENT: no such file or directory, open 'C:\Users\Koutha3i\Desktop\wassel\.next\server\app\favicon.ico\route.js'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Koutha3i\\Desktop\\wassel\\.next\\server\\app\\favicon.ico\\route.js',
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 25ms
+ GET /_next/static/css/app/layout.css?v=1783207097894 404 in 58ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 63ms

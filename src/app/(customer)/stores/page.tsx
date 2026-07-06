@@ -246,19 +246,6 @@ export default function StoresPage() {
     fetchData();
   }, []);
 
-  const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
-      const matchesSearch = store.name.toLowerCase().includes(search.toLowerCase()) ||
-        store.description.toLowerCase().includes(search.toLowerCase());
-      let matchesCategory = activeCategory === 'all';
-      if (!matchesCategory && store.categories) {
-        const main = getMainCategory(store.categories.name);
-        matchesCategory = main === activeCategory;
-      }
-      return matchesSearch && matchesCategory;
-    });
-  }, [stores, search, activeCategory, categories]);
-
   const categoryNameMap: Record<string, { en: string; fr: string; ar: string }> = {
     'Food': { en: 'Food', fr: 'Nourriture', ar: 'طعام' },
     'Groceries': { en: 'Groceries', fr: 'Épicerie', ar: 'بقالة' },
@@ -278,15 +265,28 @@ export default function StoresPage() {
 
   const mainCategories = ['Food', 'Groceries', 'Pharmacy', 'Electronics', 'Fashion', 'Flowers', 'Pets', 'Sports', 'Baby', 'Stationery'];
 
+  const getMainCategory = (catName: string) => {
+    return categoryNameMap[catName]?.en || catName;
+  };
+
   const getCatName = (name: string) => {
     const translated = categoryNameMap[name];
     if (!translated) return name;
     return language === 'ar' ? translated.ar : language === 'fr' ? translated.fr : translated.en;
   };
 
-  const getMainCategory = (catName: string) => {
-    return categoryNameMap[catName]?.en || catName;
-  };
+  const filteredStores = useMemo(() => {
+    return stores.filter((store) => {
+      const matchesSearch = store.name.toLowerCase().includes(search.toLowerCase()) ||
+        store.description.toLowerCase().includes(search.toLowerCase());
+      let matchesCategory = activeCategory === 'all';
+      if (!matchesCategory && store.categories) {
+        const main = getMainCategory(store.categories.name);
+        matchesCategory = main === activeCategory;
+      }
+      return matchesSearch && matchesCategory;
+    });
+  }, [stores, search, activeCategory, categories]);
 
   const tabs = useMemo(() => {
     const visible = mainCategories.filter((name) => {

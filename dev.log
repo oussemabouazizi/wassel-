@@ -1,0 +1,20 @@
+
+> wassel@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.3.9
+   - Local:        http://localhost:3000
+   - Network:      http://26.98.125.245:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 958ms (162 modules)
+ ○ Compiling /api/chat ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (102kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (250kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /api/chat in 2.8s (446 modules)
+ POST /api/chat 200 in 4617ms
+ POST /api/chat 200 in 12760ms
+ POST /api/chat 200 in 10551ms

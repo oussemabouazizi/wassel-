@@ -150,7 +150,7 @@ export default function SettingsProfilePage() {
           className="flex items-center gap-3 mb-6"
         >
           <button
-            onClick={() => router.push('/settings')}
+            onClick={() => router.back()}
             className="w-10 h-10 rounded-xl bg-[var(--color-surface)] flex items-center justify-center hover:bg-[var(--color-border)]/50 transition-colors"
           >
             <ChevronLeft className="w-5 h-5 text-[var(--color-text-primary)]" />
