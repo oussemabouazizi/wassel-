@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/shared/dashboard-layout';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { LayoutDashboard, Bike, ShoppingBag, Clock, DollarSign, MessageSquare } from 'lucide-react';
+import AdminAiChat from '@/components/chat/admin-chat';
 
 const navItems = [
   { href: '/delivery', icon: LayoutDashboard, label: 'Dashboard' },
@@ -93,6 +94,7 @@ export default function DeliveryLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardLayout role="delivery" navItems={navItems}>
       {children}
+      <AdminAiChat />
     </DashboardLayout>
   );
 }

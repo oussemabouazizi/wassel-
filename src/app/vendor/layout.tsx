@@ -3,6 +3,7 @@
 import { type ReactNode } from 'react';
 import { LayoutDashboard, Store, Package, ShoppingBag, BarChart3, Star, Bike } from 'lucide-react';
 import DashboardLayout from '@/components/shared/dashboard-layout';
+import AdminAiChat from '@/components/chat/admin-chat';
 
 const navItems = [
   { href: '/vendor', icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,6 +19,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardLayout role="vendor" navItems={navItems}>
       {children}
+      <AdminAiChat />
     </DashboardLayout>
   );
 }

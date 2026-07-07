@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Search, ShoppingCart, Clock, User, Heart,
-  MessageSquare, Settings, LogOut, ChevronDown, Sun, Moon, ArrowLeft, Globe
+  MessageSquare, Settings, LogOut, ChevronDown, Sun, Moon, ArrowLeft, Globe, ArrowUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store';
@@ -23,7 +23,18 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const { t, language, setLanguage } = useI18n();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   const navItems = [
     { href: '/', icon: Home, label: t('nav.home') },
@@ -419,6 +430,22 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             })}
           </div>
         </nav>
+
+        {/* Back to top */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="fixed bottom-24 right-4 z-50 lg:bottom-6 lg:right-6 w-12 h-12 bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full shadow-lg hover:shadow-xl hover:border-[#FF6B00]/50 flex items-center justify-center transition-all duration-200 hover:-translate-y-1 cursor-pointer"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </>
   );
