@@ -1,0 +1,23 @@
+{
+  "name": "Wassel - Deliver Everything",
+  "short_name": "Wassel",
+  "description": "Whatever you order, in minutes!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FF6B00",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

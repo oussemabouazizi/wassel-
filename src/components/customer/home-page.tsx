@@ -8,7 +8,7 @@ import { Button } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { useI18n } from '@/i18n';
-import AiChat from '@/components/chat/ai-chat';
+
 
 function useCountUp(end: number, duration = 2000) {
   const [count, setCount] = useState(0);
@@ -1364,14 +1364,12 @@ export default function HomePage() {
             exit={{ opacity: 0, scale: 0, y: 20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full shadow-lg hover:shadow-xl hover:border-[#FF6B00]/50 flex items-center justify-center transition-all duration-200 hover:-translate-y-1 cursor-pointer"
+            className="fixed bottom-24 right-4 z-50 lg:bottom-6 lg:right-6 w-12 h-12 bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full shadow-lg hover:shadow-xl hover:border-[#FF6B00]/50 flex items-center justify-center transition-all duration-200 hover:-translate-y-1 cursor-pointer"
           >
             <ArrowUp className="w-5 h-5" />
           </motion.button>
         )}
       </AnimatePresence>
-
-      <AiChat />
 
       {/* Global keyframe animations */}
       <style jsx global>{`

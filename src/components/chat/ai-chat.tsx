@@ -108,7 +108,7 @@ export default function AiChat() {
       {/* Floating button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 left-4 z-[9999] lg:bottom-6 lg:left-6 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white transition-all"
+        className="fixed bottom-24 left-4 z-[9999] lg:bottom-6 lg:left-6 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white transition-all"
         style={{ background: 'linear-gradient(135deg, #FF6B00, #FF8C33)' }}
         whileHover={{ scale: 1.1, boxShadow: '0 8px 30px rgba(255, 107, 0, 0.4)' }}
         whileTap={{ scale: 0.95 }}
@@ -136,7 +136,7 @@ export default function AiChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-36 left-4 sm:left-6 z-[9999] w-[calc(100vw-32px)] sm:w-[380px] sm:max-w-[calc(100vw-48px)] rounded-2xl shadow-2xl overflow-hidden flex flex-col border"
+            className="fixed bottom-40 left-4 sm:left-6 z-[9999] w-[calc(100vw-32px)] sm:w-[380px] sm:max-w-[calc(100vw-48px)] rounded-2xl shadow-2xl overflow-hidden flex flex-col border"
             style={{
               height: 'min(520px, calc(100vh - 180px))',
               background: 'var(--color-background)',
