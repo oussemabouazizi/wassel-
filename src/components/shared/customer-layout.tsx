@@ -86,11 +86,18 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         {/* ========== DESKTOP HEADER (lg+) ========== */}
         <header className="hidden lg:flex sticky top-0 z-40 items-center gap-4 h-16 px-6 bg-[var(--color-background)]/80 backdrop-blur-xl border-b border-[var(--color-border)]">
           {/* Left – Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 bg-[var(--color-primary)] rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-sm">W</span>
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
+              <img
+                src="/logo-original.jpeg"
+                alt="Wassel"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <span className="text-lg font-bold text-[var(--color-text-primary)]">{t('common.appName')}</span>
+            <div className="flex flex-col leading-none">
+              <span className="text-lg font-extrabold tracking-tight text-[var(--color-text-primary)]">Wassel</span>
+              <span className="text-[10px] font-medium text-[var(--color-text-secondary)] -mt-0.5">Deliver Everything</span>
+            </div>
           </Link>
 
           {/* Center – Search bar */}
@@ -305,10 +312,14 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 </button>
               ) : (
                 <Link href="/" className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-[var(--color-primary)] rounded-xl flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">W</span>
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-sm">
+                    <img
+                      src="/logo-original.jpeg"
+                      alt="Wassel"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <span className="text-base font-bold text-[var(--color-text-primary)]">{t('common.appName')}</span>
+                  <span className="text-base font-extrabold tracking-tight text-[var(--color-text-primary)]">Wassel</span>
                 </Link>
               )}
             </div>

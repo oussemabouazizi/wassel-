@@ -76,11 +76,11 @@ export default function DashboardLayout({ children, role, navItems }: DashboardL
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--color-border)]">
           <Link href={`/${role}`} className="flex items-center gap-2">
-            <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', roleColors[role])}>
-              <span className="text-white font-bold text-sm">W</span>
+            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
+              <img src="/logo-original.jpeg" alt="Wassel" className="w-full h-full object-cover" />
             </div>
             {!collapsed && (
-              <span className="text-lg font-bold text-[var(--color-text-primary)]">Wassel</span>
+              <span className="text-lg font-extrabold tracking-tight text-[var(--color-text-primary)]">Wassel</span>
             )}
           </Link>
           <button

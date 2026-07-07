@@ -46,10 +46,10 @@ export default function ForgotPasswordPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-[var(--color-primary)] rounded-2xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">W</span>
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-orange-500/30">
+              <img src="/logo-original.jpeg" alt="Wassel" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-bold text-[var(--color-text-primary)]">Wassel</span>
+            <span className="text-2xl font-extrabold text-[var(--color-text-primary)]">Wassel</span>
           </Link>
         </div>
 

@@ -141,8 +141,8 @@ export default function RegisterPage() {
           className="text-center mb-8"
         >
           <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#FF6B00] to-[#E55A00] rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <span className="text-white font-bold text-xl">W</span>
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-orange-500/30">
+              <img src="/logo-original.jpeg" alt="Wassel" className="w-full h-full object-cover" />
             </div>
             <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight">Wassel</span>
           </Link>

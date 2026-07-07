@@ -387,11 +387,11 @@ export default function HomePage() {
               <motion.div
                 whileHover={{ rotate: -8, scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 12 }}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF8C33] flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:shadow-orange-500/50 transition-shadow duration-300"
+                className="w-9 h-9 rounded-full overflow-hidden shadow-lg shadow-orange-500/25 group-hover:shadow-orange-500/50 transition-shadow duration-300"
               >
-                <span className="text-white font-bold text-base leading-none">W</span>
+                <img src="/logo-original.jpeg" alt="Wassel" className="w-full h-full object-cover" />
               </motion.div>
-              <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>Wassel</span>
+              <span className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>Wassel</span>
             </Link>
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
